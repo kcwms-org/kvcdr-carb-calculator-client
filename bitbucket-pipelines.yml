@@ -1,0 +1,44 @@
+image: mingc/android-build-box:latest
+
+definitions:
+  caches:
+    gradle-cache:
+      key:
+        files:
+          - gradle/libs.versions.toml
+          - app/build.gradle.kts
+      path: ~/.gradle/caches
+    gradle-wrapper:
+      key:
+        files:
+          - gradle/wrapper/gradle-wrapper.properties
+      path: ~/.gradle/wrapper
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Build, lint, and test
+          caches:
+            - gradle-cache
+            - gradle-wrapper
+          script:
+            - export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+            - ./gradlew lint
+            - ./gradlew test
+            - ./gradlew assembleDebug
+          artifacts:
+            - app/build/outputs/apk/debug/app-debug.apk
+
+  pull-requests:
+    '**':
+      - step:
+          name: Build and test (PR)
+          caches:
+            - gradle-cache
+            - gradle-wrapper
+          script:
+            - export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+            - ./gradlew lint
+            - ./gradlew test
+            - ./gradlew assembleDebug
