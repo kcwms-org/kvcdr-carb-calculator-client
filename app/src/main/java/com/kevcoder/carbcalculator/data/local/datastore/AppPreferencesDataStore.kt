@@ -1,0 +1,45 @@
+package com.kevcoder.carbcalculator.data.local.datastore
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_preferences")
+
+@Singleton
+class AppPreferencesDataStore @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    companion object {
+        val CARB_API_URL = stringPreferencesKey("carb_api_url")
+        val DEXCOM_ENV = stringPreferencesKey("dexcom_env")
+
+        const val DEFAULT_CARB_API_URL = "http://143.244.174.42:3000"
+        const val DEXCOM_ENV_PRODUCTION = "production"
+        const val DEXCOM_ENV_SANDBOX = "sandbox"
+    }
+
+    val carbApiUrl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[CARB_API_URL] ?: DEFAULT_CARB_API_URL
+    }
+
+    val dexcomEnv: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[DEXCOM_ENV] ?: DEXCOM_ENV_PRODUCTION
+    }
+
+    suspend fun saveCarbApiUrl(url: String) {
+        context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
+    }
+
+    suspend fun saveDexcomEnv(env: String) {
+        context.dataStore.edit { prefs -> prefs[DEXCOM_ENV] = env }
+    }
+}
