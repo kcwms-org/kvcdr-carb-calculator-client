@@ -1,0 +1,19 @@
+FROM mingc/android-build-box:latest
+
+WORKDIR /app
+
+# Copy Gradle wrapper and dependency descriptors first for layer caching
+COPY gradle/ gradle/
+COPY gradle/wrapper/ gradle/wrapper/
+COPY gradlew .
+COPY settings.gradle.kts .
+COPY build.gradle.kts .
+COPY app/build.gradle.kts app/
+
+# Pre-download dependencies (cached as long as build files don't change)
+RUN ./gradlew dependencies --no-daemon -q || true
+
+# Copy full source
+COPY . .
+
+RUN chmod +x gradlew
