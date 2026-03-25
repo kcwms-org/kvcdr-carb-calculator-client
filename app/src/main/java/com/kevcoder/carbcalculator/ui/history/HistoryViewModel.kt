@@ -19,7 +19,7 @@ class HistoryViewModel @Inject constructor(
     val logs: StateFlow<List<CarbLog>> = carbRepository.getLogs()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList(),
         )
 

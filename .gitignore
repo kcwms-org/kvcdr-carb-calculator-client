@@ -14,3 +14,6 @@ local.properties
 # Android build outputs
 app/build/
 app/release/
+
+# Local build artifacts
+app-debug.apk

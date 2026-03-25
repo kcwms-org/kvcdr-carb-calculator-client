@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [CarbLogEntity::class],
     version = 1,
-    exportSchema = true,
+    exportSchema = false,
 )
 abstract class CarbCalculatorDatabase : RoomDatabase() {
     abstract fun carbLogDao(): CarbLogDao

@@ -2,9 +2,12 @@ package com.kevcoder.carbcalculator.ui.history
 
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.domain.model.CarbLog
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.Runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -68,7 +71,7 @@ class HistoryViewModelTest {
 
     @Test
     fun `deleteLog calls repository`() = runTest {
-        coEvery { carbRepository.deleteLog(1L) } returns Unit
+        coEvery { carbRepository.deleteLog(1L) } just Runs
         viewModel.deleteLog(1L)
         advanceUntilIdle()
         coVerify { carbRepository.deleteLog(1L) }

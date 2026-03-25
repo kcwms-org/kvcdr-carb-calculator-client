@@ -47,8 +47,8 @@ class DexcomRepositoryTest {
     fun `getLatestGlucose returns most recent EGV reading`() = runTest {
         every { tokenManager.isConnected() } returns true
         val egvs = listOf(
-            EgvRecord("2026-01-01T10:00:00", "2026-01-01T10:00:00", 100, "mg/dL", "flat", 0f),
-            EgvRecord("2026-01-01T10:05:00", "2026-01-01T10:05:00", 120, "mg/dL", "rising", 1f),
+            EgvRecord("2026-01-01T10:00:00Z", "2026-01-01T10:00:00Z", 100, "mg/dL", "flat", 0f),
+            EgvRecord("2026-01-01T10:05:00Z", "2026-01-01T10:05:00Z", 120, "mg/dL", "rising", 1f),
         )
         coEvery { dexcomApiService.getEgvs(any(), any()) } returns EgvsResponse(egvs)
 

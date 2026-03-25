@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +37,7 @@ fun CaptureScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
 
+    val coroutineScope = rememberCoroutineScope()
     var hasCameraPermission by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
 
@@ -134,7 +136,7 @@ fun CaptureScreen(
                     if (uiState !is CaptureUiState.PhotoTaken) {
                         Button(
                             onClick = {
-                                kotlinx.coroutines.MainScope().launch {
+                                coroutineScope.launch {
                                     try {
                                         val file = cameraManager.takePicture()
                                         viewModel.onPhotoCaptured(file)

@@ -28,7 +28,7 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     /** Emits the OAuth2 URL to open in CustomTabs */
-    private val _authUrlEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    private val _authUrlEvent = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
     val authUrlEvent: SharedFlow<String> = _authUrlEvent.asSharedFlow()
 
     init {
