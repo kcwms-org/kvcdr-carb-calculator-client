@@ -11,6 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -58,15 +59,13 @@ object NetworkModule {
     ): CarbApiService {
         val dynamicUrlInterceptor = Interceptor { chain ->
             val baseUrl = runBlocking { dataStore.carbApiUrl.first() }
-                .trimEnd('/')
+                .trimEnd('/') + "/"
+            val parsedBase = baseUrl.toHttpUrl()
             val original = chain.request()
             val newUrl = original.url.newBuilder()
-                .scheme(baseUrl.substringBefore("://"))
-                .host(baseUrl.substringAfter("://").substringBefore(":").substringBefore("/"))
-                .apply {
-                    val port = baseUrl.substringAfter("://").substringAfter(":", "").substringBefore("/")
-                    if (port.isNotEmpty()) port(port.toInt())
-                }
+                .scheme(parsedBase.scheme)
+                .host(parsedBase.host)
+                .port(parsedBase.port)
                 .build()
             chain.proceed(original.newBuilder().url(newUrl).build())
         }
