@@ -2,8 +2,10 @@ package com.kevcoder.carbcalculator.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.work.WorkManager
 import com.kevcoder.carbcalculator.data.local.db.CarbCalculatorDatabase
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
+import com.kevcoder.carbcalculator.data.local.db.SubmissionLogDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,8 +24,18 @@ object DatabaseModule {
             context,
             CarbCalculatorDatabase::class.java,
             CarbCalculatorDatabase.DATABASE_NAME,
-        ).build()
+        )
+            .addMigrations(CarbCalculatorDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideCarbLogDao(db: CarbCalculatorDatabase): CarbLogDao = db.carbLogDao()
+
+    @Provides
+    fun provideSubmissionLogDao(db: CarbCalculatorDatabase): SubmissionLogDao = db.submissionLogDao()
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext context: Context): WorkManager =
+        WorkManager.getInstance(context)
 }

@@ -3,6 +3,7 @@ package com.kevcoder.carbcalculator.ui.result
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
@@ -21,6 +22,7 @@ class ResultViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var resultCache: AnalysisResultCache
     private lateinit var carbRepository: CarbRepository
+    private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var dexcomRepository: DexcomRepository
     private lateinit var viewModel: ResultViewModel
 
@@ -36,8 +38,10 @@ class ResultViewModelTest {
         Dispatchers.setMain(testDispatcher)
         resultCache = mockk()
         carbRepository = mockk()
+        submissionLogRepository = mockk(relaxed = true)
         dexcomRepository = mockk()
         every { resultCache.get() } returns fakeResult
+        every { resultCache.getSubmissionId() } returns null
         coEvery { dexcomRepository.getLatestGlucose() } returns null
     }
 
@@ -46,7 +50,7 @@ class ResultViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, dexcomRepository)
+    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, submissionLogRepository, dexcomRepository)
 
     @Test
     fun `init loads result from cache`() = runTest {

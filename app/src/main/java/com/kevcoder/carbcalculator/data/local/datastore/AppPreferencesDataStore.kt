@@ -21,10 +21,18 @@ class AppPreferencesDataStore @Inject constructor(
     companion object {
         val CARB_API_URL = stringPreferencesKey("carb_api_url")
         val DEXCOM_ENV = stringPreferencesKey("dexcom_env")
+        val SUBMISSION_PURGE_INTERVAL = stringPreferencesKey("submission_purge_interval")
 
         const val DEFAULT_CARB_API_URL = "http://143.244.174.42:3000"
         const val DEXCOM_ENV_PRODUCTION = "production"
         const val DEXCOM_ENV_SANDBOX = "sandbox"
+
+        const val PURGE_NEVER = "never"
+        const val PURGE_HOURLY = "hourly"
+        const val PURGE_DAILY = "daily"
+        const val PURGE_WEEKLY = "weekly"
+        const val PURGE_MONTHLY = "monthly"
+        const val DEFAULT_PURGE_INTERVAL = PURGE_NEVER
     }
 
     val carbApiUrl: Flow<String> = context.dataStore.data.map { prefs ->
@@ -35,11 +43,19 @@ class AppPreferencesDataStore @Inject constructor(
         prefs[DEXCOM_ENV] ?: DEXCOM_ENV_PRODUCTION
     }
 
+    val submissionPurgeInterval: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[SUBMISSION_PURGE_INTERVAL] ?: DEFAULT_PURGE_INTERVAL
+    }
+
     suspend fun saveCarbApiUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
     }
 
     suspend fun saveDexcomEnv(env: String) {
         context.dataStore.edit { prefs -> prefs[DEXCOM_ENV] = env }
+    }
+
+    suspend fun saveSubmissionPurgeInterval(interval: String) {
+        context.dataStore.edit { prefs -> prefs[SUBMISSION_PURGE_INTERVAL] = interval }
     }
 }

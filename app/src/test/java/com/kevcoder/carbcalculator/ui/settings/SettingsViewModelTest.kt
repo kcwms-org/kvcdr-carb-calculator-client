@@ -1,5 +1,6 @@
 package com.kevcoder.carbcalculator.ui.settings
 
+import androidx.work.WorkManager
 import com.kevcoder.carbcalculator.auth.dexcom.DexcomTokenManager
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
@@ -23,11 +24,13 @@ class SettingsViewModelTest {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var dexcomRepository: DexcomRepository
     private lateinit var tokenManager: DexcomTokenManager
+    private lateinit var workManager: WorkManager
     private lateinit var viewModel: SettingsViewModel
 
     private val defaultSettings = AppSettings(
         carbApiUrl = AppPreferencesDataStore.DEFAULT_CARB_API_URL,
         dexcomEnv = AppPreferencesDataStore.DEXCOM_ENV_PRODUCTION,
+        submissionPurgeInterval = AppPreferencesDataStore.DEFAULT_PURGE_INTERVAL,
     )
 
     @Before
@@ -36,9 +39,10 @@ class SettingsViewModelTest {
         settingsRepository = mockk()
         dexcomRepository = mockk()
         tokenManager = mockk()
+        workManager = mockk(relaxed = true)
         every { settingsRepository.getSettings() } returns flowOf(defaultSettings)
         every { tokenManager.isConnected() } returns false
-        viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager)
+        viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager, workManager)
     }
 
     @After
@@ -58,7 +62,7 @@ class SettingsViewModelTest {
     @Test
     fun `isDexcomConnected is true when tokenManager reports connected`() = runTest {
         every { tokenManager.isConnected() } returns true
-        viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager)
+        viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager, workManager)
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.isDexcomConnected)
     }

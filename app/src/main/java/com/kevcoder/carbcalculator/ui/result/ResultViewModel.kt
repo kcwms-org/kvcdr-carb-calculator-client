@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ data class ResultUiState(
 class ResultViewModel @Inject constructor(
     private val resultCache: AnalysisResultCache,
     private val carbRepository: CarbRepository,
+    private val submissionLogRepository: SubmissionLogRepository,
     private val dexcomRepository: DexcomRepository,
 ) : ViewModel() {
 
@@ -51,7 +53,10 @@ class ResultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             try {
-                carbRepository.saveLog(result, _uiState.value.glucose)
+                val savedId = carbRepository.saveLog(result, _uiState.value.glucose)
+                resultCache.getSubmissionId()?.let { submissionId ->
+                    submissionLogRepository.markAsSaved(submissionId, savedId)
+                }
                 resultCache.clear()
                 _uiState.value = _uiState.value.copy(isSaving = false, saved = true)
                 onSuccess()

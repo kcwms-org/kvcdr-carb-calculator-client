@@ -28,7 +28,24 @@ data class CarbLog(
     val glucose: GlucoseReading?,
 )
 
+data class SubmissionLog(
+    val id: Long,
+    val requestTimestamp: Long,
+    val imagePath: String?,
+    val imageSizeBytes: Long?,
+    val foodDescription: String?,
+    /** "pending" | "success" | "error" */
+    val status: String,
+    val items: List<FoodItem>,
+    val totalCarbs: Float?,
+    val errorMessage: String?,
+    val responseTimestamp: Long?,
+    /** Non-null if user explicitly saved this result to history */
+    val savedLogId: Long?,
+)
+
 data class AppSettings(
     val carbApiUrl: String,
     val dexcomEnv: String,
+    val submissionPurgeInterval: String,
 )

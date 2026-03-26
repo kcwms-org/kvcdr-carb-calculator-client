@@ -14,9 +14,15 @@ class SettingsRepository @Inject constructor(
     fun getSettings(): Flow<AppSettings> = combine(
         dataStore.carbApiUrl,
         dataStore.dexcomEnv,
-    ) { url, env -> AppSettings(carbApiUrl = url, dexcomEnv = env) }
+        dataStore.submissionPurgeInterval,
+    ) { url, env, purgeInterval ->
+        AppSettings(carbApiUrl = url, dexcomEnv = env, submissionPurgeInterval = purgeInterval)
+    }
 
     suspend fun saveApiUrl(url: String) = dataStore.saveCarbApiUrl(url)
 
     suspend fun saveDexcomEnv(env: String) = dataStore.saveDexcomEnv(env)
+
+    suspend fun saveSubmissionPurgeInterval(interval: String) =
+        dataStore.saveSubmissionPurgeInterval(interval)
 }

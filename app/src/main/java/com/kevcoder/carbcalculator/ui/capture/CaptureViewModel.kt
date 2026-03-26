@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ sealed interface CaptureUiState {
 @HiltViewModel
 class CaptureViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
+    private val submissionLogRepository: SubmissionLogRepository,
     private val resultCache: AnalysisResultCache,
 ) : ViewModel() {
 
@@ -39,11 +41,20 @@ class CaptureViewModel @Inject constructor(
     fun onAnalyze(imageFile: File, description: String?, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = CaptureUiState.Uploading
+            val cleanDescription = description.takeIf { !it.isNullOrBlank() }
+            val submissionId = submissionLogRepository.logRequest(
+                imagePath = imageFile.absolutePath,
+                imageSizeBytes = imageFile.length().takeIf { it > 0 },
+                foodDescription = cleanDescription,
+            )
             try {
-                val result = carbRepository.analyzeFood(imageFile, description.takeIf { !it.isNullOrBlank() })
+                val result = carbRepository.analyzeFood(imageFile, cleanDescription)
+                submissionLogRepository.logSuccess(submissionId, result)
                 resultCache.put(result)
+                resultCache.putSubmissionId(submissionId)
                 onSuccess()
             } catch (e: Exception) {
+                submissionLogRepository.logError(submissionId, e.message ?: "Analysis failed")
                 _uiState.value = CaptureUiState.Error(e.message ?: "Analysis failed")
             }
         }
