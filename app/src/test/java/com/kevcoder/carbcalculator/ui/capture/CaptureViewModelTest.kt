@@ -2,6 +2,7 @@ package com.kevcoder.carbcalculator.ui.capture
 
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import io.mockk.coEvery
@@ -22,6 +23,7 @@ class CaptureViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var carbRepository: CarbRepository
+    private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var resultCache: AnalysisResultCache
     private lateinit var viewModel: CaptureViewModel
 
@@ -29,8 +31,9 @@ class CaptureViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         carbRepository = mockk()
+        submissionLogRepository = mockk(relaxed = true)
         resultCache = mockk(relaxed = true)
-        viewModel = CaptureViewModel(carbRepository, resultCache)
+        viewModel = CaptureViewModel(carbRepository, submissionLogRepository, resultCache)
     }
 
     @After

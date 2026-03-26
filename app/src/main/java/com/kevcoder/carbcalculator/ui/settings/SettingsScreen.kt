@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -14,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
@@ -47,7 +49,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // --- Carb API URL ---
@@ -119,6 +122,32 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            HorizontalDivider()
+
+            // --- Submission Log ---
+            Text("Submission Log", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Auto-purge submissions older than:",
+                style = MaterialTheme.typography.labelMedium,
+            )
+
+            val purgeOptions = listOf(
+                AppPreferencesDataStore.PURGE_NEVER to "Never",
+                AppPreferencesDataStore.PURGE_HOURLY to "1 Hour",
+                AppPreferencesDataStore.PURGE_DAILY to "1 Day",
+                AppPreferencesDataStore.PURGE_WEEKLY to "1 Week",
+                AppPreferencesDataStore.PURGE_MONTHLY to "1 Month",
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                purgeOptions.forEach { (value, label) ->
+                    FilterChip(
+                        selected = uiState.submissionPurgeInterval == value,
+                        onClick = { viewModel.onSubmissionPurgeIntervalChanged(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
         }
     }
 }
