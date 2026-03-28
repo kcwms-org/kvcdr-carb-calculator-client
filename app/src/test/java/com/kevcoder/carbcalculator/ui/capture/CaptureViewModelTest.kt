@@ -1,5 +1,6 @@
 package com.kevcoder.carbcalculator.ui.capture
 
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
@@ -23,6 +24,7 @@ class CaptureViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var carbRepository: CarbRepository
+    private lateinit var carbApiCapture: CarbApiCapture
     private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var resultCache: AnalysisResultCache
     private lateinit var viewModel: CaptureViewModel
@@ -31,9 +33,10 @@ class CaptureViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         carbRepository = mockk()
+        carbApiCapture = CarbApiCapture()
         submissionLogRepository = mockk(relaxed = true)
         resultCache = mockk(relaxed = true)
-        viewModel = CaptureViewModel(carbRepository, submissionLogRepository, resultCache)
+        viewModel = CaptureViewModel(carbRepository, carbApiCapture, submissionLogRepository, resultCache)
     }
 
     @After
@@ -66,11 +69,17 @@ class CaptureViewModelTest {
     @Test
     fun `onAnalyze transitions to Uploading then calls onSuccess on result`() = runTest {
         val file = File("/tmp/photo.jpg")
-        val fakeResult = AnalysisResult(
+        val fakeAnalysisResult = AnalysisResult(
             items = listOf(FoodItem("Apple", 25f)),
             totalCarbs = 25f,
             foodDescription = "An apple",
             imagePath = file.absolutePath,
+        )
+        val fakeResult = CarbRepository.AnalyzeFoodResult(
+            analysisResult = fakeAnalysisResult,
+            requestHeaders = null,
+            responseHeaders = null,
+            responseBody = null,
         )
         coEvery { carbRepository.analyzeFood(any(), any()) } returns fakeResult
 
@@ -78,7 +87,7 @@ class CaptureViewModelTest {
         viewModel.onAnalyze(file, "An apple") { successCalled = true }
         advanceUntilIdle()
 
-        coVerify { resultCache.put(fakeResult) }
+        coVerify { resultCache.put(fakeAnalysisResult) }
         assertTrue(successCalled)
     }
 

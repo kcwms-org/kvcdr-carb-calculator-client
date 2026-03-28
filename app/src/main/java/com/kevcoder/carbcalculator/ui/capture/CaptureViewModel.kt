@@ -2,6 +2,7 @@ package com.kevcoder.carbcalculator.ui.capture
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
@@ -23,6 +24,7 @@ sealed interface CaptureUiState {
 @HiltViewModel
 class CaptureViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
+    private val carbApiCapture: CarbApiCapture,
     private val submissionLogRepository: SubmissionLogRepository,
     private val resultCache: AnalysisResultCache,
 ) : ViewModel() {
@@ -48,13 +50,25 @@ class CaptureViewModel @Inject constructor(
                 foodDescription = cleanDescription,
             )
             try {
-                val result = carbRepository.analyzeFood(imageFile, cleanDescription)
-                submissionLogRepository.logSuccess(submissionId, result)
-                resultCache.put(result)
+                val analyzed = carbRepository.analyzeFood(imageFile, cleanDescription)
+                submissionLogRepository.logSuccess(
+                    submissionId = submissionId,
+                    result = analyzed.analysisResult,
+                    requestHeaders = analyzed.requestHeaders,
+                    responseHeaders = analyzed.responseHeaders,
+                    responseBody = analyzed.responseBody,
+                )
+                resultCache.put(analyzed.analysisResult)
                 resultCache.putSubmissionId(submissionId)
                 onSuccess()
             } catch (e: Exception) {
-                submissionLogRepository.logError(submissionId, e.message ?: "Analysis failed")
+                submissionLogRepository.logError(
+                    submissionId = submissionId,
+                    errorMessage = e.message ?: "Analysis failed",
+                    requestHeaders = carbApiCapture.requestHeaders,
+                    responseHeaders = carbApiCapture.responseHeaders,
+                    responseBody = carbApiCapture.responseBody,
+                )
                 _uiState.value = CaptureUiState.Error(e.message ?: "Analysis failed")
             }
         }

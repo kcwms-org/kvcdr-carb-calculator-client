@@ -40,6 +40,18 @@ app/src/main/java/com/kevcoder/carbcalculator/
 └── MainActivity.kt        NavHost + OAuth redirect handling
 ```
 
+## Development Environment
+
+**All builds run inside the Docker container** — do not run Gradle commands directly on the host. Use the `docker exec` pattern below, or exec into the container first.
+
+```bash
+# Exec into the container
+docker exec -it <container_name> bash
+
+# Or run commands directly from the host
+docker exec <container_name> ./gradlew assembleDebug
+```
+
 ## Commands
 
 ```bash

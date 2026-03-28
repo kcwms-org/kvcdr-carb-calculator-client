@@ -42,6 +42,12 @@ data class SubmissionLog(
     val responseTimestamp: Long?,
     /** Non-null if user explicitly saved this result to history */
     val savedLogId: Long?,
+    /** Full POST request line + headers */
+    val requestHeaders: String?,
+    /** Full response status line + headers */
+    val responseHeaders: String?,
+    /** Raw response body */
+    val responseBody: String?,
 )
 
 data class AppSettings(
