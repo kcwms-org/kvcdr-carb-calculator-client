@@ -23,7 +23,7 @@ class AppPreferencesDataStore @Inject constructor(
         val DEXCOM_ENV = stringPreferencesKey("dexcom_env")
         val SUBMISSION_PURGE_INTERVAL = stringPreferencesKey("submission_purge_interval")
 
-        const val DEFAULT_CARB_API_URL = "http://143.244.174.42:3000"
+        const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
         const val DEXCOM_ENV_SANDBOX = "sandbox"
 
