@@ -42,30 +42,23 @@ app/src/main/java/com/kevcoder/carbcalculator/
 
 ## Development Environment
 
-**All builds run inside the Docker container** — do not run Gradle commands directly on the host. Use the `docker exec` pattern below, or exec into the container first.
-
-```bash
-# Exec into the container
-docker exec -it <container_name> bash
-
-# Or run commands directly from the host
-docker exec <container_name> ./gradlew assembleDebug
-```
-
-## Commands
+**All builds run inside Docker** — do not run Gradle commands directly on the host. Use `docker compose run` which mounts the source and a persistent Gradle cache volume so subsequent builds are fast.
 
 ```bash
 # Build debug APK
-./gradlew assembleDebug
+docker compose run --rm build ./gradlew assembleDebug
 
 # Run unit tests
-./gradlew test
+docker compose run --rm build ./gradlew test
 
 # Run instrumented tests (device/emulator required)
-./gradlew connectedAndroidTest
+docker compose run --rm build ./gradlew connectedAndroidTest
 
 # Lint
-./gradlew lint
+docker compose run --rm build ./gradlew lint
+
+# Interactive shell inside the container
+docker compose run --rm build bash
 ```
 
 ## Key Configuration
