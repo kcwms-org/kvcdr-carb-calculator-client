@@ -38,6 +38,10 @@ class SettingsViewModel @Inject constructor(
     private val _authUrlEvent = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
     val authUrlEvent: SharedFlow<String> = _authUrlEvent.asSharedFlow()
 
+    /** Fires once each time a config change is saved successfully */
+    private val _saveSuccessEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val saveSuccessEvent: SharedFlow<Unit> = _saveSuccessEvent.asSharedFlow()
+
     init {
         viewModelScope.launch {
             settingsRepository.getSettings().collect { settings ->
@@ -52,11 +56,17 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onSaveApiUrl(url: String) {
-        viewModelScope.launch { settingsRepository.saveApiUrl(url) }
+        viewModelScope.launch {
+            settingsRepository.saveApiUrl(url)
+            _saveSuccessEvent.emit(Unit)
+        }
     }
 
     fun onDexcomEnvChanged(env: String) {
-        viewModelScope.launch { settingsRepository.saveDexcomEnv(env) }
+        viewModelScope.launch {
+            settingsRepository.saveDexcomEnv(env)
+            _saveSuccessEvent.emit(Unit)
+        }
     }
 
     fun onConnectDexcom() {
@@ -81,6 +91,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.saveSubmissionPurgeInterval(interval)
             schedulePurgeWork(interval)
+            _saveSuccessEvent.emit(Unit)
         }
     }
 
