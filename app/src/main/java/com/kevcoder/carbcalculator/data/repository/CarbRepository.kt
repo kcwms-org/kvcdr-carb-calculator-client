@@ -3,6 +3,7 @@ package com.kevcoder.carbcalculator.data.repository
 import android.content.Context
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.CarbLog
@@ -27,6 +28,7 @@ import javax.inject.Singleton
 class CarbRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val carbApiService: CarbApiService,
+    private val carbApiCapture: CarbApiCapture,
     private val carbLogDao: CarbLogDao,
     private val moshi: Moshi,
 ) {
@@ -35,8 +37,16 @@ class CarbRepository @Inject constructor(
 
     data class FoodItemJson(val name: String, val estimatedCarbs: Float)
 
-    suspend fun analyzeFood(imageFile: File, description: String?): AnalysisResult =
+    data class AnalyzeFoodResult(
+        val analysisResult: AnalysisResult,
+        val requestHeaders: String?,
+        val responseHeaders: String?,
+        val responseBody: String?,
+    )
+
+    suspend fun analyzeFood(imageFile: File, description: String?): AnalyzeFoodResult =
         withContext(Dispatchers.IO) {
+            carbApiCapture.clear()
             val imagePart = MultipartBody.Part.createFormData(
                 name = "image",
                 filename = imageFile.name,
@@ -44,11 +54,16 @@ class CarbRepository @Inject constructor(
             )
             val descriptionBody = description?.toRequestBody("text/plain".toMediaType())
             val response = carbApiService.analyze(imagePart, descriptionBody)
-            AnalysisResult(
-                items = response.items.map { FoodItem(it.name, it.estimatedCarbs) },
-                totalCarbs = response.totalCarbs,
-                foodDescription = description,
-                imagePath = imageFile.absolutePath,
+            AnalyzeFoodResult(
+                analysisResult = AnalysisResult(
+                    items = response.items.map { FoodItem(it.name, it.estimatedCarbs) },
+                    totalCarbs = response.totalCarbs,
+                    foodDescription = description,
+                    imagePath = imageFile.absolutePath,
+                ),
+                requestHeaders = carbApiCapture.requestHeaders,
+                responseHeaders = carbApiCapture.responseHeaders,
+                responseBody = carbApiCapture.responseBody,
             )
         }
 

@@ -42,12 +42,21 @@ class SubmissionLogRepository @Inject constructor(
                 errorMessage = null,
                 responseTimestamp = null,
                 savedLogId = null,
+                requestHeaders = null,
+                responseHeaders = null,
+                responseBody = null,
             )
         )
     }
 
     /** Call after a successful API response. */
-    suspend fun logSuccess(submissionId: Long, result: AnalysisResult) = withContext(Dispatchers.IO) {
+    suspend fun logSuccess(
+        submissionId: Long,
+        result: AnalysisResult,
+        requestHeaders: String?,
+        responseHeaders: String?,
+        responseBody: String?,
+    ) = withContext(Dispatchers.IO) {
         val json = foodItemJsonAdapter.toJson(
             result.items.map { FoodItemJson(it.name, it.estimatedCarbs) }
         )
@@ -56,15 +65,27 @@ class SubmissionLogRepository @Inject constructor(
             foodItemsJson = json,
             totalCarbs = result.totalCarbs,
             responseTimestamp = System.currentTimeMillis(),
+            requestHeaders = requestHeaders,
+            responseHeaders = responseHeaders,
+            responseBody = responseBody,
         )
     }
 
     /** Call when the API request fails. */
-    suspend fun logError(submissionId: Long, errorMessage: String) = withContext(Dispatchers.IO) {
+    suspend fun logError(
+        submissionId: Long,
+        errorMessage: String,
+        requestHeaders: String?,
+        responseHeaders: String?,
+        responseBody: String?,
+    ) = withContext(Dispatchers.IO) {
         dao.updateWithError(
             id = submissionId,
             errorMessage = errorMessage,
             responseTimestamp = System.currentTimeMillis(),
+            requestHeaders = requestHeaders,
+            responseHeaders = responseHeaders,
+            responseBody = responseBody,
         )
     }
 
@@ -108,6 +129,9 @@ class SubmissionLogRepository @Inject constructor(
             errorMessage = errorMessage,
             responseTimestamp = responseTimestamp,
             savedLogId = savedLogId,
+            requestHeaders = requestHeaders,
+            responseHeaders = responseHeaders,
+            responseBody = responseBody,
         )
     }
 }

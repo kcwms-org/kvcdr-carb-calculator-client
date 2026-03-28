@@ -3,6 +3,7 @@ package com.kevcoder.carbcalculator.data.repository
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
 import com.kevcoder.carbcalculator.data.remote.carbapi.AnalysisResponse
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.data.remote.carbapi.FoodItemResponse
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
@@ -22,6 +23,7 @@ import java.io.File
 class CarbRepositoryTest {
 
     private lateinit var carbApiService: CarbApiService
+    private lateinit var carbApiCapture: CarbApiCapture
     private lateinit var carbLogDao: CarbLogDao
     private lateinit var context: android.content.Context
     private lateinit var moshi: Moshi
@@ -30,12 +32,13 @@ class CarbRepositoryTest {
     @Before
     fun setUp() {
         carbApiService = mockk()
+        carbApiCapture = CarbApiCapture()
         carbLogDao = mockk()
         context = mockk()
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
 
         every { context.filesDir } returns File(System.getProperty("java.io.tmpdir")!!)
-        repository = CarbRepository(context, carbApiService, carbLogDao, moshi)
+        repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, moshi)
     }
 
     @Test
@@ -50,12 +53,12 @@ class CarbRepositoryTest {
 
             val result = repository.analyzeFood(tempFile, "Fruit bowl")
 
-            assertEquals(2, result.items.size)
-            assertEquals("Apple", result.items[0].name)
-            assertEquals(25f, result.items[0].estimatedCarbs)
-            assertEquals(52f, result.totalCarbs)
-            assertEquals("Fruit bowl", result.foodDescription)
-            assertEquals(tempFile.absolutePath, result.imagePath)
+            assertEquals(2, result.analysisResult.items.size)
+            assertEquals("Apple", result.analysisResult.items[0].name)
+            assertEquals(25f, result.analysisResult.items[0].estimatedCarbs)
+            assertEquals(52f, result.analysisResult.totalCarbs)
+            assertEquals("Fruit bowl", result.analysisResult.foodDescription)
+            assertEquals(tempFile.absolutePath, result.analysisResult.imagePath)
         } finally {
             tempFile.delete()
         }

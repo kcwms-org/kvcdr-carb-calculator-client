@@ -21,7 +21,10 @@ interface SubmissionLogDao {
         SET status = 'success',
             foodItemsJson = :foodItemsJson,
             totalCarbs = :totalCarbs,
-            responseTimestamp = :responseTimestamp
+            responseTimestamp = :responseTimestamp,
+            requestHeaders = :requestHeaders,
+            responseHeaders = :responseHeaders,
+            responseBody = :responseBody
         WHERE id = :id
         """
     )
@@ -30,6 +33,9 @@ interface SubmissionLogDao {
         foodItemsJson: String,
         totalCarbs: Float,
         responseTimestamp: Long,
+        requestHeaders: String?,
+        responseHeaders: String?,
+        responseBody: String?,
     )
 
     @Query(
@@ -37,11 +43,21 @@ interface SubmissionLogDao {
         UPDATE submission_logs
         SET status = 'error',
             errorMessage = :errorMessage,
-            responseTimestamp = :responseTimestamp
+            responseTimestamp = :responseTimestamp,
+            requestHeaders = :requestHeaders,
+            responseHeaders = :responseHeaders,
+            responseBody = :responseBody
         WHERE id = :id
         """
     )
-    suspend fun updateWithError(id: Long, errorMessage: String, responseTimestamp: Long)
+    suspend fun updateWithError(
+        id: Long,
+        errorMessage: String,
+        responseTimestamp: Long,
+        requestHeaders: String?,
+        responseHeaders: String?,
+        responseBody: String?,
+    )
 
     @Query("UPDATE submission_logs SET savedLogId = :savedId WHERE id = :submissionId")
     suspend fun markAsSaved(submissionId: Long, savedId: Long)

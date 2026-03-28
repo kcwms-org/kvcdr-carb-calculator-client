@@ -1,5 +1,6 @@
 package com.kevcoder.carbcalculator.ui.submissions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,10 +8,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -95,6 +99,8 @@ fun SubmissionsScreen(
                     SubmissionLogCard(
                         log = log,
                         onCopyJson = { viewModel.copyLogAsJson(log) },
+                        onCopyRequest = { viewModel.copyRequest(log) },
+                        onCopyResponse = { viewModel.copyResponse(log) },
                     )
                 }
             }
@@ -106,11 +112,17 @@ fun SubmissionsScreen(
 private fun SubmissionLogCard(
     log: SubmissionLog,
     onCopyJson: () -> Unit,
+    onCopyRequest: () -> Unit,
+    onCopyResponse: () -> Unit,
 ) {
     val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
+    var requestExpanded by remember { mutableStateOf(false) }
+    var responseExpanded by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+
+            // Header row: status chip + copy-JSON button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -136,6 +148,7 @@ private fun SubmissionLogCard(
                 Text(desc, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             }
 
+            // Food items (success only)
             if (log.status == "success" && log.items.isNotEmpty()) {
                 log.items.forEach { item ->
                     Row(
@@ -178,6 +191,91 @@ private fun SubmissionLogCard(
                 SuggestionChip(
                     onClick = {},
                     label = { Text("Saved to History", style = MaterialTheme.typography.labelSmall) },
+                )
+            }
+
+            // HTTP details
+            if (!log.requestHeaders.isNullOrBlank() || !log.responseHeaders.isNullOrBlank() || !log.responseBody.isNullOrBlank()) {
+                HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
+
+                // Request section
+                HttpSection(
+                    label = "Request",
+                    content = log.requestHeaders,
+                    expanded = requestExpanded,
+                    onToggle = { requestExpanded = !requestExpanded },
+                    onCopy = onCopyRequest,
+                )
+
+                // Response section
+                val responseContent = buildString {
+                    log.responseHeaders?.let { append(it).append("\n\n") }
+                    log.responseBody?.let { append(it) }
+                }.ifBlank { null }
+
+                HttpSection(
+                    label = "Response",
+                    content = responseContent,
+                    expanded = responseExpanded,
+                    onToggle = { responseExpanded = !responseExpanded },
+                    onCopy = onCopyResponse,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HttpSection(
+    label: String,
+    content: String?,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onCopy: () -> Unit,
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy $label",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (expanded) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = content ?: "(none)",
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

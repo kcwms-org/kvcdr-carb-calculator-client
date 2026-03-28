@@ -27,4 +27,10 @@ data class SubmissionLogEntity(
     val responseTimestamp: Long?,
     /** FK to carb_logs.id if user explicitly saved — null otherwise */
     val savedLogId: Long?,
+    /** Full POST request line + headers captured by the OkHttp interceptor */
+    val requestHeaders: String?,
+    /** Full response status line + headers */
+    val responseHeaders: String?,
+    /** Raw response body text */
+    val responseBody: String?,
 )

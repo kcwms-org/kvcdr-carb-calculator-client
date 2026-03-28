@@ -40,20 +40,25 @@ app/src/main/java/com/kevcoder/carbcalculator/
 └── MainActivity.kt        NavHost + OAuth redirect handling
 ```
 
-## Commands
+## Development Environment
+
+**All builds run inside Docker** — do not run Gradle commands directly on the host. Use `docker compose run` which mounts the source and a persistent Gradle cache volume so subsequent builds are fast.
 
 ```bash
 # Build debug APK
-./gradlew assembleDebug
+docker compose run --rm build ./gradlew assembleDebug
 
 # Run unit tests
-./gradlew test
+docker compose run --rm build ./gradlew test
 
 # Run instrumented tests (device/emulator required)
-./gradlew connectedAndroidTest
+docker compose run --rm build ./gradlew connectedAndroidTest
 
 # Lint
-./gradlew lint
+docker compose run --rm build ./gradlew lint
+
+# Interactive shell inside the container
+docker compose run --rm build bash
 ```
 
 ## Key Configuration

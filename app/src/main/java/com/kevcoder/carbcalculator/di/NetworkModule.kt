@@ -1,6 +1,8 @@
 package com.kevcoder.carbcalculator.di
 
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCaptureInterceptor
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.data.remote.dexcom.DexcomApiService
 import com.squareup.moshi.Moshi
@@ -39,9 +41,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCarbApiCapture(): CarbApiCapture = CarbApiCapture()
+
+    @Provides
+    @Singleton
     @Named("carb")
-    fun provideCarbOkHttpClient(logging: HttpLoggingInterceptor): OkHttpClient =
+    fun provideCarbOkHttpClient(
+        logging: HttpLoggingInterceptor,
+        captureInterceptor: CarbApiCaptureInterceptor,
+    ): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor(captureInterceptor)
             .addInterceptor(logging)
             .build()
 

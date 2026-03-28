@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CarbLogEntity::class, SubmissionLogEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class CarbCalculatorDatabase : RoomDatabase() {
@@ -16,6 +16,14 @@ abstract class CarbCalculatorDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "carb_calculator.db"
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE submission_logs ADD COLUMN requestHeaders TEXT")
+                db.execSQL("ALTER TABLE submission_logs ADD COLUMN responseHeaders TEXT")
+                db.execSQL("ALTER TABLE submission_logs ADD COLUMN responseBody TEXT")
+            }
+        }
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {

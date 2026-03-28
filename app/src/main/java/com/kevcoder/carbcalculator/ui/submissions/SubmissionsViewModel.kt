@@ -39,6 +39,19 @@ class SubmissionsViewModel @Inject constructor(
         copyToClipboard("submission_log_${log.id}", log.toJsonString())
     }
 
+    fun copyRequest(log: SubmissionLog) {
+        val text = log.requestHeaders ?: "(no request captured)"
+        copyToClipboard("request_${log.id}", text)
+    }
+
+    fun copyResponse(log: SubmissionLog) {
+        val text = buildString {
+            log.responseHeaders?.let { append(it).append("\n\n") }
+            log.responseBody?.let { append(it) }
+        }.ifBlank { "(no response captured)" }
+        copyToClipboard("response_${log.id}", text)
+    }
+
     fun copyAllAsJson() {
         val array = JSONArray()
         logs.value.forEach { array.put(JSONObject(it.toJsonString())) }
@@ -62,6 +75,9 @@ class SubmissionsViewModel @Inject constructor(
         obj.put("errorMessage", errorMessage ?: JSONObject.NULL)
         obj.put("responseTimestamp", responseTimestamp ?: JSONObject.NULL)
         obj.put("savedLogId", savedLogId ?: JSONObject.NULL)
+        obj.put("requestHeaders", requestHeaders ?: JSONObject.NULL)
+        obj.put("responseHeaders", responseHeaders ?: JSONObject.NULL)
+        obj.put("responseBody", responseBody ?: JSONObject.NULL)
         val itemsArray = JSONArray()
         items.forEach { item ->
             val itemObj = JSONObject()
