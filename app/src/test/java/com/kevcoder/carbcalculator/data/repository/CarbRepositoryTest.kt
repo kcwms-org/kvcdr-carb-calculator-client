@@ -140,6 +140,22 @@ class CarbRepositoryTest {
     }
 
     @Test
+    fun `analyzeFood with null image skips presign and PUT`() = runTest {
+        coEvery { carbApiService.analyze(null, null, any()) } returns AnalysisResponse(
+            items = listOf(FoodItemResponse("Pasta", 60f)),
+            totalCarbsGrams = 60f,
+        )
+
+        val result = repository.analyzeFood(null, "A bowl of pasta")
+
+        coVerify(exactly = 0) { carbApiService.presign() }
+        verify(exactly = 0) { storageHttpClient.newCall(any()) }
+        coVerify(exactly = 0) { carbApiService.deleteUpload(any()) }
+        assertEquals(60f, result.analysisResult.totalCarbs)
+        assertNull(result.analysisResult.imagePath)
+    }
+
+    @Test
     fun `saveLog inserts entity into DAO and returns generated ID`() = runTest {
         val result = AnalysisResult(
             items = listOf(FoodItem("Rice", 45f)),

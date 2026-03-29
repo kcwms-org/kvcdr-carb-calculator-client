@@ -111,6 +111,30 @@ class CaptureViewModelTest {
     }
 
     @Test
+    fun `onAnalyze with no image and description calls repository with null file`() = runTest {
+        val fakeAnalysisResult = AnalysisResult(
+            items = listOf(FoodItem("Rice", 45f)),
+            totalCarbs = 45f,
+            foodDescription = "A bowl of rice",
+            imagePath = null,
+        )
+        val fakeResult = CarbRepository.AnalyzeFoodResult(
+            analysisResult = fakeAnalysisResult,
+            requestHeaders = null,
+            responseHeaders = null,
+            responseBody = null,
+        )
+        coEvery { carbRepository.analyzeFood(null, any(), any()) } returns fakeResult
+
+        var successCalled = false
+        viewModel.onAnalyze(null, "A bowl of rice") { successCalled = true }
+        advanceUntilIdle()
+
+        coVerify { carbRepository.analyzeFood(null, "A bowl of rice", any()) }
+        assertTrue(successCalled)
+    }
+
+    @Test
     fun `resetState returns to Idle`() {
         viewModel.onPhotoCaptured(File("/tmp/photo.jpg"))
         viewModel.resetState()
