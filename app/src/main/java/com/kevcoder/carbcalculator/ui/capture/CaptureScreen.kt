@@ -1,6 +1,8 @@
 package com.kevcoder.carbcalculator.ui.capture
 
 import android.Manifest
+import android.content.Context
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
@@ -9,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kevcoder.carbcalculator.camera.CameraManager
 import java.io.File
+import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +53,15 @@ fun CaptureScreen(
     ) { granted ->
         hasCameraPermission = granted
         if (granted) cameraManager.bindToLifecycle(lifecycleOwner, previewView)
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val file = uriToTempFile(context, uri)
+            if (file != null) viewModel.onPhotoCaptured(file)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -128,12 +141,12 @@ fun CaptureScreen(
                     maxLines = 3,
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // Shutter button — only when no photo taken yet
-                    if (uiState !is CaptureUiState.PhotoTaken) {
+                if (uiState !is CaptureUiState.PhotoTaken) {
+                    // Before a photo is selected: show Take Photo + Upload from Gallery
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Button(
                             onClick = {
                                 coroutineScope.launch {
@@ -150,34 +163,46 @@ fun CaptureScreen(
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Take Photo")
+                            Text("Camera")
                         }
-                    } else {
-                        // Retake
+                        OutlinedButton(
+                            onClick = { galleryLauncher.launch("image/*") },
+                            enabled = uiState !is CaptureUiState.Uploading,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.Photo, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Gallery")
+                        }
+                    }
+                } else {
+                    // After a photo is selected: show Retake + Analyze
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         OutlinedButton(
                             onClick = { viewModel.resetState() },
                             modifier = Modifier.weight(1f),
                         ) {
                             Text("Retake")
                         }
-                    }
-
-                    // Analyze
-                    Button(
-                        onClick = {
-                            val state = uiState
-                            if (state is CaptureUiState.PhotoTaken) {
-                                viewModel.onAnalyze(
-                                    imageFile = File(state.imagePath),
-                                    description = description,
-                                    onSuccess = onNavigateToResult,
-                                )
-                            }
-                        },
-                        enabled = uiState is CaptureUiState.PhotoTaken,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text("Analyze")
+                        Button(
+                            onClick = {
+                                val state = uiState
+                                if (state is CaptureUiState.PhotoTaken) {
+                                    viewModel.onAnalyze(
+                                        imageFile = File(state.imagePath),
+                                        description = description,
+                                        onSuccess = onNavigateToResult,
+                                    )
+                                }
+                            },
+                            enabled = uiState is CaptureUiState.PhotoTaken,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Analyze")
+                        }
                     }
                 }
 
@@ -191,5 +216,17 @@ fun CaptureScreen(
                 }
             }
         }
+    }
+}
+
+private fun uriToTempFile(context: Context, uri: Uri): File? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val tempFile = File(context.cacheDir, "gallery_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(tempFile).use { out -> inputStream.copyTo(out) }
+        inputStream.close()
+        tempFile
+    } catch (e: Exception) {
+        null
     }
 }

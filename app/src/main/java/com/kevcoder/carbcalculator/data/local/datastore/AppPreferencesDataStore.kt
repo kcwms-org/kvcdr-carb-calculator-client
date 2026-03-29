@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +23,7 @@ class AppPreferencesDataStore @Inject constructor(
         val CARB_API_URL = stringPreferencesKey("carb_api_url")
         val DEXCOM_ENV = stringPreferencesKey("dexcom_env")
         val SUBMISSION_PURGE_INTERVAL = stringPreferencesKey("submission_purge_interval")
+        val IMAGE_QUALITY = intPreferencesKey("image_quality")
 
         const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
@@ -33,6 +35,8 @@ class AppPreferencesDataStore @Inject constructor(
         const val PURGE_WEEKLY = "weekly"
         const val PURGE_MONTHLY = "monthly"
         const val DEFAULT_PURGE_INTERVAL = PURGE_NEVER
+
+        const val DEFAULT_IMAGE_QUALITY = 80
     }
 
     val carbApiUrl: Flow<String> = context.dataStore.data.map { prefs ->
@@ -47,6 +51,10 @@ class AppPreferencesDataStore @Inject constructor(
         prefs[SUBMISSION_PURGE_INTERVAL] ?: DEFAULT_PURGE_INTERVAL
     }
 
+    val imageQuality: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[IMAGE_QUALITY] ?: DEFAULT_IMAGE_QUALITY
+    }
+
     suspend fun saveCarbApiUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
     }
@@ -57,5 +65,9 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun saveSubmissionPurgeInterval(interval: String) {
         context.dataStore.edit { prefs -> prefs[SUBMISSION_PURGE_INTERVAL] = interval }
+    }
+
+    suspend fun saveImageQuality(quality: Int) {
+        context.dataStore.edit { prefs -> prefs[IMAGE_QUALITY] = quality.coerceIn(1, 100) }
     }
 }

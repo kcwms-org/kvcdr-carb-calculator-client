@@ -31,6 +31,7 @@ class SettingsViewModelTest {
         carbApiUrl = AppPreferencesDataStore.DEFAULT_CARB_API_URL,
         dexcomEnv = AppPreferencesDataStore.DEXCOM_ENV_PRODUCTION,
         submissionPurgeInterval = AppPreferencesDataStore.DEFAULT_PURGE_INTERVAL,
+        imageQuality = AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY,
     )
 
     @Before

@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -27,6 +29,7 @@ class CaptureViewModel @Inject constructor(
     private val carbApiCapture: CarbApiCapture,
     private val submissionLogRepository: SubmissionLogRepository,
     private val resultCache: AnalysisResultCache,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CaptureUiState>(CaptureUiState.Idle)
@@ -50,7 +53,8 @@ class CaptureViewModel @Inject constructor(
                 foodDescription = cleanDescription,
             )
             try {
-                val analyzed = carbRepository.analyzeFood(imageFile, cleanDescription)
+                val imageQuality = settingsRepository.getImageQuality().first()
+                val analyzed = carbRepository.analyzeFood(imageFile, cleanDescription, imageQuality)
                 submissionLogRepository.logSuccess(
                     submissionId = submissionId,
                     result = analyzed.analysisResult,

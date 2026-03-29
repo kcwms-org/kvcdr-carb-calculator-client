@@ -1,13 +1,16 @@
 package com.kevcoder.carbcalculator.ui.capture
 
+import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +30,7 @@ class CaptureViewModelTest {
     private lateinit var carbApiCapture: CarbApiCapture
     private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var resultCache: AnalysisResultCache
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var viewModel: CaptureViewModel
 
     @Before
@@ -36,7 +40,9 @@ class CaptureViewModelTest {
         carbApiCapture = CarbApiCapture()
         submissionLogRepository = mockk(relaxed = true)
         resultCache = mockk(relaxed = true)
-        viewModel = CaptureViewModel(carbRepository, carbApiCapture, submissionLogRepository, resultCache)
+        settingsRepository = mockk()
+        every { settingsRepository.getImageQuality() } returns kotlinx.coroutines.flow.flowOf(AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY)
+        viewModel = CaptureViewModel(carbRepository, carbApiCapture, submissionLogRepository, resultCache, settingsRepository)
     }
 
     @After
@@ -81,7 +87,7 @@ class CaptureViewModelTest {
             responseHeaders = null,
             responseBody = null,
         )
-        coEvery { carbRepository.analyzeFood(any(), any()) } returns fakeResult
+        coEvery { carbRepository.analyzeFood(any(), any(), any()) } returns fakeResult
 
         var successCalled = false
         viewModel.onAnalyze(file, "An apple") { successCalled = true }
@@ -94,7 +100,7 @@ class CaptureViewModelTest {
     @Test
     fun `onAnalyze transitions to Error when repository throws`() = runTest {
         val file = File("/tmp/photo.jpg")
-        coEvery { carbRepository.analyzeFood(any(), any()) } throws RuntimeException("Network error")
+        coEvery { carbRepository.analyzeFood(any(), any(), any()) } throws RuntimeException("Network error")
 
         viewModel.onAnalyze(file, null) {}
         advanceUntilIdle()

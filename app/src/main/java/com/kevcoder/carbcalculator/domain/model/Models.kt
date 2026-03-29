@@ -54,4 +54,5 @@ data class AppSettings(
     val carbApiUrl: String,
     val dexcomEnv: String,
     val submissionPurgeInterval: String,
+    val imageQuality: Int,
 )
