@@ -200,6 +200,31 @@ fun SettingsScreen(
 
                 HorizontalDivider()
 
+                // --- Image Quality ---
+                Text("Image Quality", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Images are compressed before upload. Lower quality = smaller file size.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Low", style = MaterialTheme.typography.labelSmall)
+                    Text("${uiState.imageQuality}%", style = MaterialTheme.typography.labelMedium)
+                    Text("High", style = MaterialTheme.typography.labelSmall)
+                }
+                Slider(
+                    value = uiState.imageQuality.toFloat(),
+                    onValueChange = { viewModel.onImageQualityChanged(it.toInt()) },
+                    valueRange = 10f..100f,
+                    steps = 17,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                HorizontalDivider()
+
                 // --- Dexcom ---
                 Text("Dexcom Integration", style = MaterialTheme.typography.titleMedium)
 

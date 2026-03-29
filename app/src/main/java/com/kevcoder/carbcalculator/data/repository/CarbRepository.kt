@@ -16,10 +16,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,13 +46,14 @@ class CarbRepository @Inject constructor(
         val responseBody: String?,
     )
 
-    suspend fun analyzeFood(imageFile: File, description: String?): AnalyzeFoodResult =
+    suspend fun analyzeFood(imageFile: File, description: String?, imageQuality: Int = 80): AnalyzeFoodResult =
         withContext(Dispatchers.IO) {
             carbApiCapture.clear()
+            val imageBytes = compressImage(imageFile, imageQuality.coerceIn(1, 100))
             val imagePart = MultipartBody.Part.createFormData(
                 name = "image",
                 filename = imageFile.name,
-                body = imageFile.asRequestBody("image/jpeg".toMediaType()),
+                body = imageBytes.toRequestBody("image/jpeg".toMediaType()),
             )
             val descriptionBody = description?.toRequestBody("text/plain".toMediaType())
             val response = carbApiService.analyze(imagePart, descriptionBody)
@@ -122,5 +125,19 @@ class CarbRepository @Inject constructor(
     suspend fun deleteLog(id: Long) = withContext(Dispatchers.IO) {
         carbLogDao.getLogById(id)?.thumbnailPath?.let { File(it).delete() }
         carbLogDao.deleteLog(id)
+    }
+
+    private fun compressImage(file: File, quality: Int): ByteArray {
+        return try {
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                ?: return file.readBytes()
+            ByteArrayOutputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                bitmap.recycle()
+                out.toByteArray()
+            }
+        } catch (_: Exception) {
+            file.readBytes()
+        }
     }
 }
