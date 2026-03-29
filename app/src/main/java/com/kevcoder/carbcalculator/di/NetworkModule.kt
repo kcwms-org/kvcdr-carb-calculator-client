@@ -11,6 +11,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -20,7 +23,12 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Named
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ApplicationScope
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -42,6 +50,22 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideCarbApiCapture(): CarbApiCapture = CarbApiCapture()
+
+    @Provides
+    @Singleton
+    @Named("storage")
+    fun provideStorageOkHttpClient(
+        logging: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Provides
     @Singleton

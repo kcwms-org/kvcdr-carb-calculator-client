@@ -6,20 +6,28 @@ import com.kevcoder.carbcalculator.data.remote.carbapi.AnalysisResponse
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.data.remote.carbapi.FoodItemResponse
+import com.kevcoder.carbcalculator.data.remote.carbapi.PresignResponse
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.mockk.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import java.io.File
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CarbRepositoryTest {
 
     private lateinit var carbApiService: CarbApiService
@@ -27,7 +35,16 @@ class CarbRepositoryTest {
     private lateinit var carbLogDao: CarbLogDao
     private lateinit var context: android.content.Context
     private lateinit var moshi: Moshi
+    private lateinit var storageHttpClient: OkHttpClient
+    private lateinit var applicationScope: CoroutineScope
     private lateinit var repository: CarbRepository
+
+    private val defaultPresign = PresignResponse(
+        uploadUrl = "https://spaces.example.com/put-url",
+        imageUrl = "https://spaces.example.com/image.jpg",
+        key = "uploads/abc123",
+        requiredHeaders = mapOf("Content-Type" to "image/jpeg"),
+    )
 
     @Before
     fun setUp() {
@@ -36,20 +53,34 @@ class CarbRepositoryTest {
         carbLogDao = mockk()
         context = mockk()
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        storageHttpClient = mockk()
+        applicationScope = CoroutineScope(UnconfinedTestDispatcher())
 
         every { context.filesDir } returns File(System.getProperty("java.io.tmpdir")!!)
-        repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, moshi)
+        repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, moshi, storageHttpClient, applicationScope)
+    }
+
+    private fun mockSuccessfulPut() {
+        val mockResponse = mockk<Response>()
+        every { mockResponse.isSuccessful } returns true
+        every { mockResponse.close() } returns Unit
+        val mockCall = mockk<Call>()
+        every { mockCall.execute() } returns mockResponse
+        every { storageHttpClient.newCall(any()) } returns mockCall
     }
 
     @Test
     fun `analyzeFood maps API response to domain AnalysisResult`() = runTest {
         val tempFile = File.createTempFile("test_photo", ".jpg")
         try {
+            coEvery { carbApiService.presign() } returns defaultPresign
+            mockSuccessfulPut()
             val apiResponse = AnalysisResponse(
                 items = listOf(FoodItemResponse("Apple", 25f), FoodItemResponse("Banana", 27f)),
-                totalCarbs = 52f,
+                totalCarbsGrams = 52f,
             )
-            coEvery { carbApiService.analyze(any(), any()) } returns apiResponse
+            coEvery { carbApiService.analyze(null, any(), any()) } returns apiResponse
+            coEvery { carbApiService.deleteUpload(any()) } returns Unit
 
             val result = repository.analyzeFood(tempFile, "Fruit bowl")
 
@@ -59,6 +90,50 @@ class CarbRepositoryTest {
             assertEquals(52f, result.analysisResult.totalCarbs)
             assertEquals("Fruit bowl", result.analysisResult.foodDescription)
             assertEquals(tempFile.absolutePath, result.analysisResult.imagePath)
+            coVerify { carbApiService.presign() }
+            coVerify { carbApiService.deleteUpload("uploads/abc123") }
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    @Test
+    fun `analyzeFood throws when storage PUT fails`() = runTest {
+        val tempFile = File.createTempFile("test_photo", ".jpg")
+        try {
+            coEvery { carbApiService.presign() } returns defaultPresign
+            val mockResponse = mockk<Response>()
+            every { mockResponse.isSuccessful } returns false
+            every { mockResponse.code } returns 403
+            every { mockResponse.close() } returns Unit
+            val mockCall = mockk<Call>()
+            every { mockCall.execute() } returns mockResponse
+            every { storageHttpClient.newCall(any()) } returns mockCall
+
+            assertThrows(IllegalStateException::class.java) {
+                kotlinx.coroutines.runBlocking { repository.analyzeFood(tempFile, null) }
+            }
+            coVerify(exactly = 0) { carbApiService.analyze(any(), any(), any()) }
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    @Test
+    fun `analyzeFood returns result even when DELETE throws`() = runTest {
+        val tempFile = File.createTempFile("test_photo", ".jpg")
+        try {
+            coEvery { carbApiService.presign() } returns defaultPresign
+            mockSuccessfulPut()
+            coEvery { carbApiService.analyze(null, any(), any()) } returns AnalysisResponse(
+                items = listOf(FoodItemResponse("Rice", 45f)),
+                totalCarbsGrams = 45f,
+            )
+            coEvery { carbApiService.deleteUpload(any()) } throws RuntimeException("network error")
+
+            val result = repository.analyzeFood(tempFile, null)
+            assertNotNull(result)
+            assertEquals(45f, result.analysisResult.totalCarbs)
         } finally {
             tempFile.delete()
         }
