@@ -141,69 +141,65 @@ fun CaptureScreen(
                     maxLines = 3,
                 )
 
-                if (uiState !is CaptureUiState.PhotoTaken) {
-                    // Before a photo is selected: show Take Photo + Upload from Gallery
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        val file = cameraManager.takePicture()
-                                        viewModel.onPhotoCaptured(file)
-                                    } catch (e: Exception) {
-                                        viewModel.onCaptureFailed(e.message ?: "Capture failed")
-                                    }
+                // Image source row: Camera + Gallery (+ Retake when photo is taken)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                try {
+                                    val file = cameraManager.takePicture()
+                                    viewModel.onPhotoCaptured(file)
+                                } catch (e: Exception) {
+                                    viewModel.onCaptureFailed(e.message ?: "Capture failed")
                                 }
-                            },
-                            enabled = hasCameraPermission && uiState !is CaptureUiState.Uploading,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Camera")
-                        }
-                        OutlinedButton(
-                            onClick = { galleryLauncher.launch("image/*") },
-                            enabled = uiState !is CaptureUiState.Uploading,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Icon(Icons.Default.Photo, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Gallery")
-                        }
-                    }
-                } else {
-                    // After a photo is selected: show Retake + Analyze
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            }
+                        },
+                        enabled = hasCameraPermission && uiState !is CaptureUiState.Uploading,
+                        modifier = Modifier.weight(1f),
                     ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Camera")
+                    }
+                    OutlinedButton(
+                        onClick = { galleryLauncher.launch("image/*") },
+                        enabled = uiState !is CaptureUiState.Uploading,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.Photo, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Gallery")
+                    }
+                    if (uiState is CaptureUiState.PhotoTaken) {
                         OutlinedButton(
                             onClick = { viewModel.resetState() },
                             modifier = Modifier.weight(1f),
                         ) {
                             Text("Retake")
                         }
-                        Button(
-                            onClick = {
-                                val state = uiState
-                                if (state is CaptureUiState.PhotoTaken) {
-                                    viewModel.onAnalyze(
-                                        imageFile = File(state.imagePath),
-                                        description = description,
-                                        onSuccess = onNavigateToResult,
-                                    )
-                                }
-                            },
-                            enabled = uiState is CaptureUiState.PhotoTaken,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text("Analyze")
-                        }
                     }
+                }
+
+                // Analyze row: always visible, enabled when there's a photo or a description
+                val canAnalyze = (uiState is CaptureUiState.PhotoTaken || description.isNotBlank()) &&
+                    uiState !is CaptureUiState.Uploading
+                Button(
+                    onClick = {
+                        val imageFile = (uiState as? CaptureUiState.PhotoTaken)
+                            ?.let { File(it.imagePath) }
+                        viewModel.onAnalyze(
+                            imageFile = imageFile,
+                            description = description,
+                            onSuccess = onNavigateToResult,
+                        )
+                    },
+                    enabled = canAnalyze,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Analyze")
                 }
 
                 // Error display

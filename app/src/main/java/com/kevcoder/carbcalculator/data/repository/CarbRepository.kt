@@ -53,43 +53,47 @@ class CarbRepository @Inject constructor(
         val responseBody: String?,
     )
 
-    suspend fun analyzeFood(imageFile: File, description: String?, imageQuality: Int = 80): AnalyzeFoodResult =
+    suspend fun analyzeFood(imageFile: File?, description: String?, imageQuality: Int = 80): AnalyzeFoodResult =
         withContext(Dispatchers.IO) {
             carbApiCapture.clear()
 
-            val imageBytes = compressImage(imageFile, imageQuality.coerceIn(1, 100))
+            val textBody = description?.toRequestBody("text/plain".toMediaType())
 
-            // Step 1: get presigned upload URL
-            val presign = carbApiService.presign()
+            val response = if (imageFile != null) {
+                val imageBytes = compressImage(imageFile, imageQuality.coerceIn(1, 100))
 
-            // Step 2: PUT image directly to object storage
-            val putRequest = Request.Builder()
-                .url(presign.uploadUrl)
-                .apply { presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) } }
-                .put(imageBytes.toRequestBody("image/jpeg".toMediaType()))
-                .build()
+                // Step 1: get presigned upload URL
+                val presign = carbApiService.presign()
 
-            val putResponse = storageHttpClient.newCall(putRequest).execute()
-            if (!putResponse.isSuccessful) {
-                val code = putResponse.code
+                // Step 2: PUT image directly to object storage
+                val putRequest = Request.Builder()
+                    .url(presign.uploadUrl)
+                    .apply { presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) } }
+                    .put(imageBytes.toRequestBody("image/jpeg".toMediaType()))
+                    .build()
+
+                val putResponse = storageHttpClient.newCall(putRequest).execute()
+                if (!putResponse.isSuccessful) {
+                    val code = putResponse.code
+                    putResponse.close()
+                    error("Storage upload failed: HTTP $code")
+                }
                 putResponse.close()
-                error("Storage upload failed: HTTP $code")
-            }
-            putResponse.close()
 
-            // Step 3: analyze via URL
-            val cleanDescription = description?.toRequestBody("text/plain".toMediaType())
-            val imageUrlBody = presign.imageUrl.toRequestBody("text/plain".toMediaType())
-            val response = carbApiService.analyze(
-                image = null,
-                imageUrl = imageUrlBody,
-                text = cleanDescription,
-            )
+                // Step 3: analyze via URL
+                val imageUrlBody = presign.imageUrl.toRequestBody("text/plain".toMediaType())
+                val result = carbApiService.analyze(image = null, imageUrl = imageUrlBody, text = textBody)
 
-            // Step 4: fire-and-forget cleanup
-            val key = presign.key
-            applicationScope.launch {
-                try { carbApiService.deleteUpload(key) } catch (_: Exception) {}
+                // Step 4: fire-and-forget cleanup
+                val key = presign.key
+                applicationScope.launch {
+                    try { carbApiService.deleteUpload(key) } catch (_: Exception) {}
+                }
+
+                result
+            } else {
+                // Text-only: skip presign/PUT, send description directly
+                carbApiService.analyze(image = null, imageUrl = null, text = textBody)
             }
 
             AnalyzeFoodResult(
@@ -97,7 +101,7 @@ class CarbRepository @Inject constructor(
                     items = response.items.map { FoodItem(it.name, it.carbsGrams) },
                     totalCarbs = response.totalCarbsGrams,
                     foodDescription = description,
-                    imagePath = imageFile.absolutePath,
+                    imagePath = imageFile?.absolutePath,
                 ),
                 requestHeaders = carbApiCapture.requestHeaders,
                 responseHeaders = carbApiCapture.responseHeaders,

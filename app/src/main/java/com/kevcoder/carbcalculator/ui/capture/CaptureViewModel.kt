@@ -43,13 +43,13 @@ class CaptureViewModel @Inject constructor(
         _uiState.value = CaptureUiState.Error(message)
     }
 
-    fun onAnalyze(imageFile: File, description: String?, onSuccess: () -> Unit) {
+    fun onAnalyze(imageFile: File?, description: String?, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = CaptureUiState.Uploading
             val cleanDescription = description.takeIf { !it.isNullOrBlank() }
             val submissionId = submissionLogRepository.logRequest(
-                imagePath = imageFile.absolutePath,
-                imageSizeBytes = imageFile.length().takeIf { it > 0 },
+                imagePath = imageFile?.absolutePath,
+                imageSizeBytes = imageFile?.length()?.takeIf { it > 0 },
                 foodDescription = cleanDescription,
             )
             try {
