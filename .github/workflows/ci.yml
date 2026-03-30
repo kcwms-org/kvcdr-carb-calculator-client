@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1   # HEAD SHA is sufficient for BuildConfig.GIT_COMMIT_SHA
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

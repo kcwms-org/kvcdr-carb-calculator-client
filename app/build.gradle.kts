@@ -1,3 +1,5 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -22,6 +24,19 @@ android {
         // Dexcom OAuth2 redirect scheme registered here for BuildConfig access
         manifestPlaceholders["dexcomRedirectScheme"] = "kvcdr-carb"
         manifestPlaceholders["dexcomRedirectHost"] = "oauth2callback"
+
+        // Inject git short SHA for display in About screen
+        val gitSha = try {
+            val stdout = ByteArrayOutputStream()
+            exec {
+                commandLine("git", "rev-parse", "--short", "HEAD")
+                standardOutput = stdout
+            }
+            stdout.toString(Charsets.UTF_8.name()).trim()
+        } catch (e: Exception) {
+            "unknown"
+        }
+        buildConfigField("String", "GIT_COMMIT_SHA", "\"$gitSha\"")
     }
 
     buildTypes {

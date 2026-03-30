@@ -16,6 +16,7 @@ import com.kevcoder.carbcalculator.ui.history.HistoryScreen
 import com.kevcoder.carbcalculator.ui.result.ResultScreen
 import com.kevcoder.carbcalculator.ui.settings.SettingsScreen
 import com.kevcoder.carbcalculator.ui.settings.SettingsViewModel
+import com.kevcoder.carbcalculator.ui.about.AboutScreen
 import com.kevcoder.carbcalculator.ui.submissions.SubmissionsScreen
 import com.kevcoder.carbcalculator.ui.theme.CarbCalculatorTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,6 +28,7 @@ object Routes {
     const val HISTORY = "history"
     const val SETTINGS = "settings"
     const val SUBMISSIONS = "submissions"
+    const val ABOUT = "about"
 }
 
 @AndroidEntryPoint
@@ -88,6 +90,7 @@ class MainActivity : ComponentActivity() {
 
                         SettingsScreen(
                             onNavigateBack = { navController.popBackStack() },
+                            onNavigateToAbout = { navController.navigate(Routes.ABOUT) },
                             viewModel = settingsViewModel,
                         )
                     }
@@ -96,6 +99,10 @@ class MainActivity : ComponentActivity() {
                         SubmissionsScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
+                    }
+
+                    composable(Routes.ABOUT) {
+                        AboutScreen(onNavigateBack = { navController.popBackStack() })
                     }
                 }
             }
