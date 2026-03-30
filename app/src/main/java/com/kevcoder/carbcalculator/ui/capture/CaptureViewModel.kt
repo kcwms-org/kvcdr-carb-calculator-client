@@ -64,6 +64,7 @@ class CaptureViewModel @Inject constructor(
                 )
                 resultCache.put(analyzed.analysisResult)
                 resultCache.putSubmissionId(submissionId)
+                resetState()
                 onSuccess()
             } catch (e: Exception) {
                 submissionLogRepository.logError(
