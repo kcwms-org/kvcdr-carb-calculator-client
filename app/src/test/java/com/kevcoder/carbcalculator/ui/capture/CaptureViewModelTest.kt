@@ -95,6 +95,7 @@ class CaptureViewModelTest {
 
         coVerify { resultCache.put(fakeAnalysisResult) }
         assertTrue(successCalled)
+        assertEquals(CaptureUiState.Idle, viewModel.uiState.value)
     }
 
     @Test
