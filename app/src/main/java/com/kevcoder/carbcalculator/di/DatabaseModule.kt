@@ -25,7 +25,11 @@ object DatabaseModule {
             CarbCalculatorDatabase::class.java,
             CarbCalculatorDatabase.DATABASE_NAME,
         )
-            .addMigrations(CarbCalculatorDatabase.MIGRATION_1_2, CarbCalculatorDatabase.MIGRATION_2_3)
+            .addMigrations(
+                CarbCalculatorDatabase.MIGRATION_1_2,
+                CarbCalculatorDatabase.MIGRATION_2_3,
+                CarbCalculatorDatabase.MIGRATION_3_4,
+            )
             .build()
 
     @Provides

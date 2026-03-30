@@ -1,18 +1,15 @@
 package com.kevcoder.carbcalculator.ui.capture
 
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
-import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
-import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
@@ -27,8 +24,6 @@ class CaptureViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var carbRepository: CarbRepository
-    private lateinit var carbApiCapture: CarbApiCapture
-    private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var resultCache: AnalysisResultCache
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var viewModel: CaptureViewModel
@@ -37,12 +32,10 @@ class CaptureViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         carbRepository = mockk()
-        carbApiCapture = CarbApiCapture()
-        submissionLogRepository = mockk(relaxed = true)
         resultCache = mockk(relaxed = true)
         settingsRepository = mockk()
         every { settingsRepository.getImageQuality() } returns kotlinx.coroutines.flow.flowOf(AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY)
-        viewModel = CaptureViewModel(carbRepository, carbApiCapture, submissionLogRepository, resultCache, settingsRepository)
+        viewModel = CaptureViewModel(carbRepository, resultCache, settingsRepository)
     }
 
     @After
@@ -93,7 +86,14 @@ class CaptureViewModelTest {
         viewModel.onAnalyze(file, "An apple") { successCalled = true }
         advanceUntilIdle()
 
-        coVerify { resultCache.put(fakeAnalysisResult) }
+        coVerify {
+            resultCache.put(
+                result = fakeAnalysisResult,
+                requestHeaders = null,
+                responseHeaders = null,
+                responseBody = null,
+            )
+        }
         assertTrue(successCalled)
         assertEquals(CaptureUiState.Idle, viewModel.uiState.value)
     }

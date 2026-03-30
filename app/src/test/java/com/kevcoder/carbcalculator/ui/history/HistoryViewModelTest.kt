@@ -1,6 +1,7 @@
 package com.kevcoder.carbcalculator.ui.history
 
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.CarbLog
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,6 +23,7 @@ class HistoryViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var carbRepository: CarbRepository
+    private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var viewModel: HistoryViewModel
 
     private val fakeLogs = listOf(
@@ -49,8 +51,10 @@ class HistoryViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         carbRepository = mockk()
+        submissionLogRepository = mockk()
         every { carbRepository.getLogs() } returns flowOf(fakeLogs)
-        viewModel = HistoryViewModel(carbRepository)
+        every { submissionLogRepository.getByParentId(any()) } returns flowOf(emptyList())
+        viewModel = HistoryViewModel(carbRepository, submissionLogRepository)
     }
 
     @After
@@ -75,5 +79,14 @@ class HistoryViewModelTest {
         viewModel.deleteLog(1L)
         advanceUntilIdle()
         coVerify { carbRepository.deleteLog(1L) }
+    }
+
+    @Test
+    fun `toggleExpand sets expandedLogId`() = runTest {
+        assertNull(viewModel.expandedLogId.value)
+        viewModel.toggleExpand(1L)
+        assertEquals(1L, viewModel.expandedLogId.value)
+        viewModel.toggleExpand(1L)
+        assertNull(viewModel.expandedLogId.value)
     }
 }

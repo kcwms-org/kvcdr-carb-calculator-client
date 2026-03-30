@@ -8,6 +8,8 @@ import com.kevcoder.carbcalculator.data.repository.DexcomRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +31,14 @@ class ResultViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
     private val submissionLogRepository: SubmissionLogRepository,
     private val dexcomRepository: DexcomRepository,
+    private val moshi: Moshi,
 ) : ViewModel() {
+
+    private val foodItemListType = Types.newParameterizedType(
+        List::class.java,
+        SubmissionLogRepository.FoodItemJson::class.java,
+    )
+    private val foodItemJsonAdapter = moshi.adapter<List<SubmissionLogRepository.FoodItemJson>>(foodItemListType)
 
     private val _uiState = MutableStateFlow(ResultUiState())
     val uiState: StateFlow<ResultUiState> = _uiState.asStateFlow()
@@ -42,7 +51,6 @@ class ResultViewModel @Inject constructor(
 
     private fun fetchGlucose() {
         viewModelScope.launch {
-            // Non-blocking: glucose is supplementary; don't block the result display
             val reading = dexcomRepository.getLatestGlucose()
             _uiState.value = _uiState.value.copy(glucose = reading)
         }
@@ -53,10 +61,26 @@ class ResultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             try {
-                val savedId = carbRepository.saveLog(result, _uiState.value.glucose)
-                resultCache.getSubmissionId()?.let { submissionId ->
-                    submissionLogRepository.markAsSaved(submissionId, savedId)
-                }
+                val carbLogId = carbRepository.saveLog(result, _uiState.value.glucose)
+
+                val foodItemsJson = foodItemJsonAdapter.toJson(
+                    result.items.map { SubmissionLogRepository.FoodItemJson(it.name, it.estimatedCarbs) }
+                )
+                submissionLogRepository.logRequest(
+                    carbLogId = carbLogId,
+                    imagePath = result.imagePath,
+                    imageSizeBytes = result.imagePath?.let { java.io.File(it).takeIf { f -> f.exists() }?.length() },
+                    foodDescription = result.foodDescription,
+                    status = "success",
+                    foodItemsJson = foodItemsJson,
+                    totalCarbs = result.totalCarbs,
+                    errorMessage = null,
+                    responseTimestamp = System.currentTimeMillis(),
+                    requestHeaders = resultCache.getRequestHeaders(),
+                    responseHeaders = resultCache.getResponseHeaders(),
+                    responseBody = resultCache.getResponseBody(),
+                )
+
                 resultCache.clear()
                 _uiState.value = _uiState.value.copy(isSaving = false, saved = true)
                 onSuccess()

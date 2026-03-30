@@ -17,7 +17,6 @@ import com.kevcoder.carbcalculator.ui.result.ResultScreen
 import com.kevcoder.carbcalculator.ui.settings.SettingsScreen
 import com.kevcoder.carbcalculator.ui.settings.SettingsViewModel
 import com.kevcoder.carbcalculator.ui.about.AboutScreen
-import com.kevcoder.carbcalculator.ui.submissions.SubmissionsScreen
 import com.kevcoder.carbcalculator.ui.theme.CarbCalculatorTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -27,7 +26,6 @@ object Routes {
     const val RESULT = "result"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
-    const val SUBMISSIONS = "submissions"
     const val ABOUT = "about"
 }
 
@@ -72,14 +70,12 @@ class MainActivity : ComponentActivity() {
                     composable(Routes.HISTORY) {
                         HistoryScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onNavigateToSubmissions = { navController.navigate(Routes.SUBMISSIONS) },
                         )
                     }
 
                     composable(Routes.SETTINGS) {
                         val settingsViewModel: SettingsViewModel = hiltViewModel()
 
-                        // Handle pending OAuth code if we were redirected back mid-navigation
                         LaunchedEffect(pendingOAuthCode) {
                             pendingOAuthCode?.let { code ->
                                 dexcomRepository.exchangeCode(code)
@@ -92,12 +88,6 @@ class MainActivity : ComponentActivity() {
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToAbout = { navController.navigate(Routes.ABOUT) },
                             viewModel = settingsViewModel,
-                        )
-                    }
-
-                    composable(Routes.SUBMISSIONS) {
-                        SubmissionsScreen(
-                            onNavigateBack = { navController.popBackStack() },
                         )
                     }
 
@@ -115,7 +105,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        // Handle Dexcom OAuth2 redirect: kvcdr-carb://oauth2callback?code=<code>
         val uri = intent?.data ?: return
         if (uri.scheme == "kvcdr-carb" && uri.host == "oauth2callback") {
             pendingOAuthCode = uri.getQueryParameter("code")
