@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -141,6 +142,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStar(
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -298,6 +300,25 @@ fun SettingsScreen(
                             label = { Text(label) },
                         )
                     }
+                }
+
+                HorizontalDivider()
+
+                // --- About ---
+                TextButton(
+                    onClick = onNavigateToAbout,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "About",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
             }
         }
