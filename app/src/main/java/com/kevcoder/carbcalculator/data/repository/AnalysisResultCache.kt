@@ -5,28 +5,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory cache to pass AnalysisResult and submissionId from CaptureViewModel
+ * In-memory cache to pass AnalysisResult and HTTP capture data from CaptureViewModel
  * to ResultViewModel without serializing large data through nav arguments.
  */
 @Singleton
 class AnalysisResultCache @Inject constructor() {
     private var cached: AnalysisResult? = null
-    private var submissionId: Long? = null
+    private var requestHeaders: String? = null
+    private var responseHeaders: String? = null
+    private var responseBody: String? = null
 
-    fun put(result: AnalysisResult) {
+    fun put(
+        result: AnalysisResult,
+        requestHeaders: String?,
+        responseHeaders: String?,
+        responseBody: String?,
+    ) {
         cached = result
-    }
-
-    fun putSubmissionId(id: Long) {
-        submissionId = id
+        this.requestHeaders = requestHeaders
+        this.responseHeaders = responseHeaders
+        this.responseBody = responseBody
     }
 
     fun get(): AnalysisResult? = cached
-
-    fun getSubmissionId(): Long? = submissionId
+    fun getRequestHeaders(): String? = requestHeaders
+    fun getResponseHeaders(): String? = responseHeaders
+    fun getResponseBody(): String? = responseBody
 
     fun clear() {
         cached = null
-        submissionId = null
+        requestHeaders = null
+        responseHeaders = null
+        responseBody = null
     }
 }

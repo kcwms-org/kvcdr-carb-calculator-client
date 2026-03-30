@@ -30,18 +30,17 @@ data class CarbLog(
 
 data class SubmissionLog(
     val id: Long,
+    val carbLogId: Long,
     val requestTimestamp: Long,
     val imagePath: String?,
     val imageSizeBytes: Long?,
     val foodDescription: String?,
-    /** "pending" | "success" | "error" */
+    /** "success" | "error" */
     val status: String,
     val items: List<FoodItem>,
     val totalCarbs: Float?,
     val errorMessage: String?,
     val responseTimestamp: Long?,
-    /** Non-null if user explicitly saved this result to history */
-    val savedLogId: Long?,
     /** Full POST request line + headers */
     val requestHeaders: String?,
     /** Full response status line + headers */

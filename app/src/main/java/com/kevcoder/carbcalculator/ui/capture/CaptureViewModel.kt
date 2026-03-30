@@ -2,11 +2,9 @@ package com.kevcoder.carbcalculator.ui.capture
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
-import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,8 +24,6 @@ sealed interface CaptureUiState {
 @HiltViewModel
 class CaptureViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
-    private val carbApiCapture: CarbApiCapture,
-    private val submissionLogRepository: SubmissionLogRepository,
     private val resultCache: AnalysisResultCache,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
@@ -47,33 +43,18 @@ class CaptureViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = CaptureUiState.Uploading
             val cleanDescription = description.takeIf { !it.isNullOrBlank() }
-            val submissionId = submissionLogRepository.logRequest(
-                imagePath = imageFile?.absolutePath,
-                imageSizeBytes = imageFile?.length()?.takeIf { it > 0 },
-                foodDescription = cleanDescription,
-            )
             try {
                 val imageQuality = settingsRepository.getImageQuality().first()
                 val analyzed = carbRepository.analyzeFood(imageFile, cleanDescription, imageQuality)
-                submissionLogRepository.logSuccess(
-                    submissionId = submissionId,
+                resultCache.put(
                     result = analyzed.analysisResult,
                     requestHeaders = analyzed.requestHeaders,
                     responseHeaders = analyzed.responseHeaders,
                     responseBody = analyzed.responseBody,
                 )
-                resultCache.put(analyzed.analysisResult)
-                resultCache.putSubmissionId(submissionId)
                 resetState()
                 onSuccess()
             } catch (e: Exception) {
-                submissionLogRepository.logError(
-                    submissionId = submissionId,
-                    errorMessage = e.message ?: "Analysis failed",
-                    requestHeaders = carbApiCapture.requestHeaders,
-                    responseHeaders = carbApiCapture.responseHeaders,
-                    responseBody = carbApiCapture.responseBody,
-                )
                 _uiState.value = CaptureUiState.Error(e.message ?: "Analysis failed")
             }
         }
