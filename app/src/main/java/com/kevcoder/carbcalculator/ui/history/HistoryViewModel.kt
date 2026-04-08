@@ -33,6 +33,9 @@ class HistoryViewModel @Inject constructor(
     private val _expandedLogId = MutableStateFlow<Long?>(null)
     val expandedLogId: StateFlow<Long?> = _expandedLogId
 
+    private val _viewingImageLog = MutableStateFlow<CarbLog?>(null)
+    val viewingImageLog: StateFlow<CarbLog?> = _viewingImageLog
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val expandedSubmissions: StateFlow<List<SubmissionLog>> = _expandedLogId
         .flatMapLatest { id ->
@@ -54,5 +57,13 @@ class HistoryViewModel @Inject constructor(
             if (_expandedLogId.value == id) _expandedLogId.value = null
             carbRepository.deleteLog(id)
         }
+    }
+
+    fun onImageClick(log: CarbLog) {
+        _viewingImageLog.value = log
+    }
+
+    fun onImageViewerDismiss() {
+        _viewingImageLog.value = null
     }
 }

@@ -13,6 +13,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.asImageBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,15 +54,27 @@ fun ResultScreen(
         ) {
             // Food photo
             item {
-                result.imagePath?.let { path ->
-                    AsyncImage(
-                        model = path,
+                if (result.imageData != null) {
+                    val bitmap = remember { BitmapFactory.decodeByteArray(result.imageData, 0, result.imageData.size) }
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
                         contentDescription = "Food photo",
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(200.dp),
                         contentScale = ContentScale.Crop,
                     )
+                } else {
+                    result.imagePath?.let { path ->
+                        AsyncImage(
+                            model = path,
+                            contentDescription = "Food photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
                 }
             }
 

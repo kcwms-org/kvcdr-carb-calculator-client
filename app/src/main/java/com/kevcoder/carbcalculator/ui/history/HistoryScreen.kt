@@ -3,10 +3,12 @@ package com.kevcoder.carbcalculator.ui.history
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
@@ -14,8 +16,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +33,9 @@ import com.kevcoder.carbcalculator.domain.model.CarbLog
 import com.kevcoder.carbcalculator.domain.model.SubmissionLog
 import java.text.SimpleDateFormat
 import java.util.*
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material3.Image
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +46,7 @@ fun HistoryScreen(
     val logs by viewModel.logs.collectAsState()
     val expandedLogId by viewModel.expandedLogId.collectAsState()
     val expandedSubmissions by viewModel.expandedSubmissions.collectAsState()
+    val viewingImageLog by viewModel.viewingImageLog.collectAsState()
 
     Scaffold(
         topBar = {
@@ -76,9 +85,15 @@ fun HistoryScreen(
                         submissions = if (isExpanded) expandedSubmissions else emptyList(),
                         onToggleExpand = { viewModel.toggleExpand(log.id) },
                         onDelete = { viewModel.deleteLog(log.id) },
+                        onImageClick = { viewModel.onImageClick(log) },
                     )
                 }
             }
+        }
+
+        // Full-screen image viewer
+        viewingImageLog?.let { log ->
+            FullScreenImageViewer(log = log, onDismiss = { viewModel.onImageViewerDismiss() })
         }
     }
 }
@@ -90,6 +105,7 @@ private fun CarbLogCard(
     submissions: List<SubmissionLog>,
     onToggleExpand: () -> Unit,
     onDelete: () -> Unit,
+    onImageClick: () -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
 
@@ -104,13 +120,31 @@ private fun CarbLogCard(
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                log.thumbnailPath?.let { path ->
-                    AsyncImage(
-                        model = path,
-                        contentDescription = "Food thumbnail",
-                        modifier = Modifier.size(72.dp),
-                        contentScale = ContentScale.Crop,
-                    )
+                // Image with click handler - prefer imageData if available
+                if (log.imageData != null || log.thumbnailPath != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clickable(onClick = onImageClick),
+                    ) {
+                        if (log.imageData != null) {
+                            val bitmap = remember { BitmapFactory.decodeByteArray(log.imageData, 0, log.imageData.size) }
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Food thumbnail",
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            AsyncImage(
+                                model = log.thumbnailPath,
+                                contentDescription = "Food thumbnail",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                            )
+                        }
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -379,6 +413,128 @@ private fun SubmissionLog.toJsonString(): String {
     }
     obj.put("items", itemsArray)
     return obj.toString(2)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FullScreenImageViewer(
+    log: CarbLog,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            // Close button top-right
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ExpandLess,
+                    contentDescription = "Close",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            // Full-size image in the center
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                if (log.imageData != null) {
+                    val bitmap = remember { BitmapFactory.decodeByteArray(log.imageData, 0, log.imageData.size) }
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Full-size food photo",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentScale = ContentScale.Fit,
+                    )
+                } else {
+                    log.thumbnailPath?.let { path ->
+                        AsyncImage(
+                            model = path,
+                            contentDescription = "Food photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
+            }
+
+            // Metadata bottom sheet
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                ) {
+                    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
+                    Text(
+                        text = dateFormat.format(Date(log.timestamp)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Food items
+                    if (log.items.isNotEmpty()) {
+                        Text(
+                            text = "Items",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        log.items.forEach { item ->
+                            Text(
+                                text = "${item.name} - ${item.estimatedCarbs}g",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+
+                    // Total carbs
+                    Text(
+                        text = "Total: ${log.totalCarbs}g carbs",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    // Glucose if available
+                    log.glucose?.let { glucose ->
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Glucose: ${glucose.mgDl} mg/dL",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

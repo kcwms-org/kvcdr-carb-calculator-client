@@ -12,11 +12,19 @@ data class FoodItemResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class ImageDataResponse(
+    @Json(name = "data")      val data: String,
+    @Json(name = "mime_type") val mimeType: String,
+)
+
+@JsonClass(generateAdapter = true)
 data class AnalysisResponse(
     @Json(name = "items")            val items: List<FoodItemResponse>,
     @Json(name = "total_carbs_grams") val totalCarbsGrams: Float,
     @Json(name = "engine_used")      val engineUsed: String? = null,
     @Json(name = "cached")           val cached: Boolean? = null,
+    @Json(name = "datetime")         val datetime: String? = null,
+    @Json(name = "images")           val images: List<ImageDataResponse>? = null,
 )
 
 @JsonClass(generateAdapter = true)

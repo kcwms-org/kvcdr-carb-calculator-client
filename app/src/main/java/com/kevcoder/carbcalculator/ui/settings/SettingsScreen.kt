@@ -227,6 +227,22 @@ fun SettingsScreen(
 
                 HorizontalDivider()
 
+                // --- Image Storage ---
+                Text("Image Storage", style = MaterialTheme.typography.titleMedium)
+                ListItem(
+                    headlineContent = { Text("Save images to device") },
+                    supportingContent = { Text("Save a copy to your photo gallery") },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.saveImagesToDevice,
+                            onCheckedChange = { viewModel.onSaveImagesToDeviceChanged(it) },
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                HorizontalDivider()
+
                 // --- Dexcom ---
                 Text("Dexcom Integration", style = MaterialTheme.typography.titleMedium)
 

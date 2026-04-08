@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -24,6 +25,7 @@ class AppPreferencesDataStore @Inject constructor(
         val DEXCOM_ENV = stringPreferencesKey("dexcom_env")
         val SUBMISSION_PURGE_INTERVAL = stringPreferencesKey("submission_purge_interval")
         val IMAGE_QUALITY = intPreferencesKey("image_quality")
+        val SAVE_IMAGES_TO_DEVICE = booleanPreferencesKey("save_images_to_device")
 
         const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
@@ -55,6 +57,10 @@ class AppPreferencesDataStore @Inject constructor(
         prefs[IMAGE_QUALITY] ?: DEFAULT_IMAGE_QUALITY
     }
 
+    val saveImagesToDevice: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[SAVE_IMAGES_TO_DEVICE] ?: false
+    }
+
     suspend fun saveCarbApiUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
     }
@@ -69,5 +75,9 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun saveImageQuality(quality: Int) {
         context.dataStore.edit { prefs -> prefs[IMAGE_QUALITY] = quality.coerceIn(1, 100) }
+    }
+
+    suspend fun saveSaveImagesToDevice(value: Boolean) {
+        context.dataStore.edit { prefs -> prefs[SAVE_IMAGES_TO_DEVICE] = value }
     }
 }

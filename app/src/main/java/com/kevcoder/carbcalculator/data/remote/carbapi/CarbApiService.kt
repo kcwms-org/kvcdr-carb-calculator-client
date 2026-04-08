@@ -20,6 +20,7 @@ interface CarbApiService {
         @Part image: MultipartBody.Part? = null,
         @Part("image_url") imageUrl: RequestBody? = null,
         @Part("text") text: RequestBody? = null,
+        @Part("datetime") datetime: RequestBody? = null,
     ): AnalysisResponse
 
     @DELETE("upload/{key}")
