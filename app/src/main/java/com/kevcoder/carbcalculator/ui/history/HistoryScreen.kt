@@ -536,6 +536,3 @@ private fun FullScreenImageViewer(
         }
     }
 }
-
-@Composable
-private fun <T> remember(calculation: () -> T): T = androidx.compose.runtime.remember(calculation)
