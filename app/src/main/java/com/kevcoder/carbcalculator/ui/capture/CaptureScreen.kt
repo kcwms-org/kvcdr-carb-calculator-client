@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.History
@@ -207,20 +208,28 @@ fun CaptureScreen(
                         initialHour = selectedDatetime.hour,
                         initialMinute = selectedDatetime.minute,
                     )
-                    TimePickerDialog(
-                        onDismiss = { showTimePickerDialog = false },
-                        onConfirm = {
-                            val newDatetime = OffsetDateTime.of(
-                                selectedDatetime.toLocalDate(),
-                                LocalTime.of(timePickerState.hour, timePickerState.minute),
-                                selectedDatetime.offset
-                            )
-                            viewModel.onDatetimeSelected(newDatetime)
-                            showTimePickerDialog = false
+                    AlertDialog(
+                        onDismissRequest = { showTimePickerDialog = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    val newDatetime = OffsetDateTime.of(
+                                        selectedDatetime.toLocalDate(),
+                                        LocalTime.of(timePickerState.hour, timePickerState.minute),
+                                        selectedDatetime.offset
+                                    )
+                                    viewModel.onDatetimeSelected(newDatetime)
+                                    showTimePickerDialog = false
+                                }
+                            ) { Text("OK") }
                         },
-                    ) {
-                        TimePicker(timePickerState)
-                    }
+                        dismissButton = {
+                            TextButton(onClick = { showTimePickerDialog = false }) { Text("Cancel") }
+                        },
+                        text = {
+                            TimePicker(timePickerState)
+                        }
+                    )
                 }
 
                 // Image source row: Camera + Gallery (+ Retake when photo is taken)
