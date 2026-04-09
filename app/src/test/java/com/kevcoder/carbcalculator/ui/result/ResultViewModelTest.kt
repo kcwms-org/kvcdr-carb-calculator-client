@@ -3,6 +3,7 @@ package com.kevcoder.carbcalculator.ui.result
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
@@ -26,6 +27,7 @@ class ResultViewModelTest {
     private lateinit var carbRepository: CarbRepository
     private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var dexcomRepository: DexcomRepository
+    private lateinit var settingsRepository: SettingsRepository
     private val moshi: Moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private lateinit var viewModel: ResultViewModel
 
@@ -43,6 +45,7 @@ class ResultViewModelTest {
         carbRepository = mockk()
         submissionLogRepository = mockk(relaxed = true)
         dexcomRepository = mockk()
+        settingsRepository = mockk()
         every { resultCache.get() } returns fakeResult
         every { resultCache.getRequestHeaders() } returns null
         every { resultCache.getResponseHeaders() } returns null
@@ -55,7 +58,7 @@ class ResultViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, submissionLogRepository, dexcomRepository, moshi)
+    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, submissionLogRepository, dexcomRepository, settingsRepository, moshi)
 
     @Test
     fun `init loads result from cache`() = runTest {
