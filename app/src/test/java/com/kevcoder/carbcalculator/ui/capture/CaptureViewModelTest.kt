@@ -80,7 +80,7 @@ class CaptureViewModelTest {
             responseHeaders = null,
             responseBody = null,
         )
-        coEvery { carbRepository.analyzeFood(any(), any(), any()) } returns fakeResult
+        coEvery { carbRepository.analyzeFood(any(), any(), any(), any()) } returns fakeResult
 
         var successCalled = false
         viewModel.onAnalyze(file, "An apple") { successCalled = true }
@@ -101,7 +101,7 @@ class CaptureViewModelTest {
     @Test
     fun `onAnalyze transitions to Error when repository throws`() = runTest {
         val file = File("/tmp/photo.jpg")
-        coEvery { carbRepository.analyzeFood(any(), any(), any()) } throws RuntimeException("Network error")
+        coEvery { carbRepository.analyzeFood(any(), any(), any(), any()) } throws RuntimeException("Network error")
 
         viewModel.onAnalyze(file, null) {}
         advanceUntilIdle()
@@ -125,13 +125,13 @@ class CaptureViewModelTest {
             responseHeaders = null,
             responseBody = null,
         )
-        coEvery { carbRepository.analyzeFood(null, any(), any()) } returns fakeResult
+        coEvery { carbRepository.analyzeFood(null, any(), any(), any()) } returns fakeResult
 
         var successCalled = false
         viewModel.onAnalyze(null, "A bowl of rice") { successCalled = true }
         advanceUntilIdle()
 
-        coVerify { carbRepository.analyzeFood(null, "A bowl of rice", any()) }
+        coVerify { carbRepository.analyzeFood(null, "A bowl of rice", any(), any()) }
         assertTrue(successCalled)
     }
 
