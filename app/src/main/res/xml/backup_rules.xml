@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ (API 31+) backup/restore rules.
+    Includes the Room database and thumbnails directory.
+    EncryptedSharedPreferences are device-key-encrypted and cannot be
+    restored to a different device, so they are intentionally omitted.
+    Referenced by android:dataExtractionRules in AndroidManifest.xml.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="carb_calculator.db" />
+        <include domain="file" path="thumbnails/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="carb_calculator.db" />
+        <include domain="file" path="thumbnails/" />
+    </device-transfer>
+</data-extraction-rules>
