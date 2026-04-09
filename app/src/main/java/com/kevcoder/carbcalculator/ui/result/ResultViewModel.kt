@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
@@ -14,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,6 +33,7 @@ class ResultViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
     private val submissionLogRepository: SubmissionLogRepository,
     private val dexcomRepository: DexcomRepository,
+    private val settingsRepository: SettingsRepository,
     private val moshi: Moshi,
 ) : ViewModel() {
 
@@ -61,7 +64,12 @@ class ResultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             try {
-                val carbLogId = carbRepository.saveLog(result, _uiState.value.glucose)
+                val settings = settingsRepository.getSettings().first()
+                val carbLogId = carbRepository.saveLog(
+                    result,
+                    _uiState.value.glucose,
+                    saveImagesToDevice = settings.saveImagesToDevice,
+                )
 
                 val foodItemsJson = foodItemJsonAdapter.toJson(
                     result.items.map { SubmissionLogRepository.FoodItemJson(it.name, it.estimatedCarbs) }

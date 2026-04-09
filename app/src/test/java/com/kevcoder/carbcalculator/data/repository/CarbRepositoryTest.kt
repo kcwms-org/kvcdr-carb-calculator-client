@@ -79,7 +79,7 @@ class CarbRepositoryTest {
                 items = listOf(FoodItemResponse("Apple", 25f), FoodItemResponse("Banana", 27f)),
                 totalCarbsGrams = 52f,
             )
-            coEvery { carbApiService.analyze(null, any(), any()) } returns apiResponse
+            coEvery { carbApiService.analyze(null, any(), any(), any()) } returns apiResponse
             coEvery { carbApiService.deleteUpload(any()) } returns Unit
 
             val result = repository.analyzeFood(tempFile, "Fruit bowl")
@@ -113,7 +113,7 @@ class CarbRepositoryTest {
             assertThrows(IllegalStateException::class.java) {
                 kotlinx.coroutines.runBlocking { repository.analyzeFood(tempFile, null) }
             }
-            coVerify(exactly = 0) { carbApiService.analyze(any(), any(), any()) }
+            coVerify(exactly = 0) { carbApiService.analyze(any(), any(), any(), any()) }
         } finally {
             tempFile.delete()
         }
@@ -125,7 +125,7 @@ class CarbRepositoryTest {
         try {
             coEvery { carbApiService.presign() } returns defaultPresign
             mockSuccessfulPut()
-            coEvery { carbApiService.analyze(null, any(), any()) } returns AnalysisResponse(
+            coEvery { carbApiService.analyze(null, any(), any(), any()) } returns AnalysisResponse(
                 items = listOf(FoodItemResponse("Rice", 45f)),
                 totalCarbsGrams = 45f,
             )
@@ -141,7 +141,7 @@ class CarbRepositoryTest {
 
     @Test
     fun `analyzeFood with null image skips presign and PUT`() = runTest {
-        coEvery { carbApiService.analyze(null, null, any()) } returns AnalysisResponse(
+        coEvery { carbApiService.analyze(null, null, any(), any()) } returns AnalysisResponse(
             items = listOf(FoodItemResponse("Pasta", 60f)),
             totalCarbsGrams = 60f,
         )

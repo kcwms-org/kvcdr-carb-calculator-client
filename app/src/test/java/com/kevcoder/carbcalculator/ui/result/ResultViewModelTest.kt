@@ -3,10 +3,13 @@ package com.kevcoder.carbcalculator.ui.result
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
+import com.kevcoder.carbcalculator.domain.model.AppSettings
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
+import kotlinx.coroutines.flow.flowOf
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.mockk.*
@@ -26,6 +29,7 @@ class ResultViewModelTest {
     private lateinit var carbRepository: CarbRepository
     private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var dexcomRepository: DexcomRepository
+    private lateinit var settingsRepository: SettingsRepository
     private val moshi: Moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private lateinit var viewModel: ResultViewModel
 
@@ -43,6 +47,10 @@ class ResultViewModelTest {
         carbRepository = mockk()
         submissionLogRepository = mockk(relaxed = true)
         dexcomRepository = mockk()
+        settingsRepository = mockk()
+        every { settingsRepository.getSettings() } returns flowOf(
+            AppSettings(carbApiUrl = "", dexcomEnv = "sandbox", submissionPurgeInterval = "never", imageQuality = 80)
+        )
         every { resultCache.get() } returns fakeResult
         every { resultCache.getRequestHeaders() } returns null
         every { resultCache.getResponseHeaders() } returns null
@@ -55,7 +63,7 @@ class ResultViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, submissionLogRepository, dexcomRepository, moshi)
+    private fun createViewModel() = ResultViewModel(resultCache, carbRepository, submissionLogRepository, dexcomRepository, settingsRepository, moshi)
 
     @Test
     fun `init loads result from cache`() = runTest {
@@ -83,7 +91,7 @@ class ResultViewModelTest {
 
     @Test
     fun `onSave calls repository and clears cache on success`() = runTest {
-        coEvery { carbRepository.saveLog(any(), any()) } returns 1L
+        coEvery { carbRepository.saveLog(any(), any(), any()) } returns 1L
         every { resultCache.clear() } just Runs
         viewModel = createViewModel()
         advanceUntilIdle()
@@ -92,7 +100,7 @@ class ResultViewModelTest {
         viewModel.onSave { successCalled = true }
         advanceUntilIdle()
 
-        coVerify { carbRepository.saveLog(fakeResult, null) }
+        coVerify { carbRepository.saveLog(fakeResult, null, false) }
         verify { resultCache.clear() }
         assertTrue(successCalled)
         assertTrue(viewModel.uiState.value.saved)
@@ -100,7 +108,7 @@ class ResultViewModelTest {
 
     @Test
     fun `onSave sets error state when repository throws`() = runTest {
-        coEvery { carbRepository.saveLog(any(), any()) } throws RuntimeException("DB error")
+        coEvery { carbRepository.saveLog(any(), any(), any()) } throws RuntimeException("DB error")
         viewModel = createViewModel()
         advanceUntilIdle()
 

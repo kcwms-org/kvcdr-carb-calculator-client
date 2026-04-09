@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.OffsetDateTime
 import javax.inject.Inject
 
 sealed interface CaptureUiState {
@@ -31,8 +32,19 @@ class CaptureViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<CaptureUiState>(CaptureUiState.Idle)
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
 
+    private val _selectedDatetime = MutableStateFlow(OffsetDateTime.now())
+    val selectedDatetime: StateFlow<OffsetDateTime> = _selectedDatetime.asStateFlow()
+
     fun onPhotoCaptured(imageFile: File) {
         _uiState.value = CaptureUiState.PhotoTaken(imageFile.absolutePath)
+    }
+
+    fun onDatetimeSelected(datetime: OffsetDateTime) {
+        _selectedDatetime.value = datetime
+    }
+
+    fun resetDatetime() {
+        _selectedDatetime.value = OffsetDateTime.now()
     }
 
     fun onCaptureFailed(message: String) {
@@ -45,7 +57,12 @@ class CaptureViewModel @Inject constructor(
             val cleanDescription = description.takeIf { !it.isNullOrBlank() }
             try {
                 val imageQuality = settingsRepository.getImageQuality().first()
-                val analyzed = carbRepository.analyzeFood(imageFile, cleanDescription, imageQuality)
+                val analyzed = carbRepository.analyzeFood(
+                    imageFile,
+                    cleanDescription,
+                    imageQuality,
+                    _selectedDatetime.value,
+                )
                 resultCache.put(
                     result = analyzed.analysisResult,
                     requestHeaders = analyzed.requestHeaders,
@@ -53,6 +70,7 @@ class CaptureViewModel @Inject constructor(
                     responseBody = analyzed.responseBody,
                 )
                 resetState()
+                resetDatetime()
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = CaptureUiState.Error(e.message ?: "Analysis failed")

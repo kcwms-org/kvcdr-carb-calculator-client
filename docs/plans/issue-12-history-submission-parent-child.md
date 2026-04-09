@@ -1,5 +1,7 @@
 # Plan: History/Submission Log Parent-Child Relationship with Expandable UI
 
+**Status:** Done — merged via PR #15
+
 **GitHub Issue:** [#12](https://github.com/kcwms-org/kvcdr-carb-calculator-client/issues/12)
 
 ## Context

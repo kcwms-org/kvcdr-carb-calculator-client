@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.History
@@ -28,6 +29,12 @@ import coil.compose.AsyncImage
 import com.kevcoder.carbcalculator.camera.CameraManager
 import java.io.File
 import java.io.FileOutputStream
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import androidx.compose.material.icons.filled.EditCalendar
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,10 +47,13 @@ fun CaptureScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
+    val selectedDatetime by viewModel.selectedDatetime.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
     var hasCameraPermission by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
 
     val cameraManager = remember { CameraManager(context) }
     val previewView = remember { PreviewView(context) }
@@ -140,6 +150,87 @@ fun CaptureScreen(
                     singleLine = false,
                     maxLines = 3,
                 )
+
+                // DateTime picker
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = { showDatePickerDialog = true },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.EditCalendar, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(selectedDatetime.format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
+                    }
+                    OutlinedButton(
+                        onClick = { showTimePickerDialog = true },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(selectedDatetime.format(DateTimeFormatter.ofPattern("h:mm a")))
+                    }
+                }
+
+                // Date picker dialog
+                if (showDatePickerDialog) {
+                    val currentDate = selectedDatetime.toLocalDate()
+                    val datePickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = currentDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    )
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePickerDialog = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    val selectedDate = LocalDate.ofEpochDay(datePickerState.selectedDateMillis!! / (24 * 60 * 60 * 1000))
+                                    val newDatetime = OffsetDateTime.of(
+                                        selectedDate,
+                                        selectedDatetime.toLocalTime(),
+                                        selectedDatetime.offset
+                                    )
+                                    viewModel.onDatetimeSelected(newDatetime)
+                                    showDatePickerDialog = false
+                                }
+                            ) { Text("OK") }
+                        }
+                    ) {
+                        DatePicker(datePickerState)
+                    }
+                }
+
+                // Time picker dialog
+                if (showTimePickerDialog) {
+                    val timePickerState = rememberTimePickerState(
+                        initialHour = selectedDatetime.hour,
+                        initialMinute = selectedDatetime.minute,
+                    )
+                    AlertDialog(
+                        onDismissRequest = { showTimePickerDialog = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    val newDatetime = OffsetDateTime.of(
+                                        selectedDatetime.toLocalDate(),
+                                        LocalTime.of(timePickerState.hour, timePickerState.minute),
+                                        selectedDatetime.offset
+                                    )
+                                    viewModel.onDatetimeSelected(newDatetime)
+                                    showTimePickerDialog = false
+                                }
+                            ) { Text("OK") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showTimePickerDialog = false }) { Text("Cancel") }
+                        },
+                        text = {
+                            TimePicker(timePickerState)
+                        }
+                    )
+                }
 
                 // Image source row: Camera + Gallery (+ Retake when photo is taken)
                 Row(

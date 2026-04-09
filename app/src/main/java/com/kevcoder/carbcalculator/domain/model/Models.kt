@@ -11,6 +11,10 @@ data class AnalysisResult(
     val foodDescription: String?,
     /** Temp file path from camera capture — not yet persisted */
     val imagePath: String?,
+    /** Decoded base64 image data from API response */
+    val imageData: ByteArray? = null,
+    /** Server-returned datetime in epoch milliseconds */
+    val datetime: Long? = null,
 )
 
 data class GlucoseReading(
@@ -26,6 +30,7 @@ data class CarbLog(
     val totalCarbs: Float,
     val thumbnailPath: String?,
     val glucose: GlucoseReading?,
+    val imageData: ByteArray? = null,
 )
 
 data class SubmissionLog(
@@ -54,4 +59,5 @@ data class AppSettings(
     val dexcomEnv: String,
     val submissionPurgeInterval: String,
     val imageQuality: Int,
+    val saveImagesToDevice: Boolean = false,
 )

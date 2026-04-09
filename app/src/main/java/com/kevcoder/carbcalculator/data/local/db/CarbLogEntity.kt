@@ -1,5 +1,6 @@
 package com.kevcoder.carbcalculator.data.local.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -16,4 +17,7 @@ data class CarbLogEntity(
     val thumbnailPath: String?,
     val glucoseMgDl: Int?,
     val glucoseTimestamp: Long?,
+    @ColumnInfo(name = "image_data")
+    /** Raw image bytes from API response */
+    val imageData: ByteArray? = null,
 )

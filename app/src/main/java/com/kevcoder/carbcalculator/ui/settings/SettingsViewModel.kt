@@ -22,6 +22,7 @@ data class SettingsUiState(
     val isDexcomConnected: Boolean = false,
     val submissionPurgeInterval: String = AppPreferencesDataStore.DEFAULT_PURGE_INTERVAL,
     val imageQuality: Int = AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY,
+    val saveImagesToDevice: Boolean = false,
 )
 
 @HiltViewModel
@@ -52,6 +53,7 @@ class SettingsViewModel @Inject constructor(
                     isDexcomConnected = tokenManager.isConnected(),
                     submissionPurgeInterval = settings.submissionPurgeInterval,
                     imageQuality = settings.imageQuality,
+                    saveImagesToDevice = settings.saveImagesToDevice,
                 )
             }
         }
@@ -92,6 +94,13 @@ class SettingsViewModel @Inject constructor(
     fun onImageQualityChanged(quality: Int) {
         viewModelScope.launch {
             settingsRepository.saveImageQuality(quality)
+        }
+    }
+
+    fun onSaveImagesToDeviceChanged(value: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveSaveImagesToDevice(value)
+            _saveSuccessEvent.emit(Unit)
         }
     }
 

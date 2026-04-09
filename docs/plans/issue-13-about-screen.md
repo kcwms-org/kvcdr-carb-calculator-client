@@ -1,5 +1,7 @@
 # Plan: About Screen with SemVer+Git Version
 
+**Status:** Done — merged via PR #14
+
 **GitHub Issue:** [#13](https://github.com/kcwms-org/kvcdr-carb-calculator-client/issues/13)
 
 ## Context
