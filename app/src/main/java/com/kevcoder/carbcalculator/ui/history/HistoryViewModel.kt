@@ -43,8 +43,8 @@ class HistoryViewModel @Inject constructor(
     // Get orphaned error SubmissionLogs
     private val orphanedErrors = submissionLogRepository.getOrphanedErrorLogs()
 
-    // Get the user's preference for default expansion state
-    private val expandByDefault = settingsRepository.getSettings().map { it.expandSubmissionsDefault }
+    // Note: expandByDefault setting loaded but not used for initial expansion
+    // Users explicitly toggle expand; this setting could be used for future UX improvements
 
     // Combine both into a single list sorted by timestamp (desc)
     val historyItems: StateFlow<List<HistoryItem>> = combine(carbLogs, orphanedErrors) { logs, errors ->

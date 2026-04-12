@@ -243,6 +243,22 @@ fun SettingsScreen(
 
                 HorizontalDivider()
 
+                // --- History Display ---
+                Text("History Display", style = MaterialTheme.typography.titleMedium)
+                ListItem(
+                    headlineContent = { Text("Expand submissions by default") },
+                    supportingContent = { Text("Show submission details automatically in history") },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.expandSubmissionsDefault,
+                            onCheckedChange = { viewModel.onExpandSubmissionsDefaultChanged(it) },
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                HorizontalDivider()
+
                 // --- Dexcom ---
                 Text("Dexcom Integration", style = MaterialTheme.typography.titleMedium)
 
