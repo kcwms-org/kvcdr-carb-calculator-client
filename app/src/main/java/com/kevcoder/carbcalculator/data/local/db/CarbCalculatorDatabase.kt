@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CarbLogEntity::class, SubmissionLogEntity::class],
-    version = 5,
+    version = 7,
     exportSchema = false,
 )
 abstract class CarbCalculatorDatabase : RoomDatabase() {
@@ -16,6 +16,56 @@ abstract class CarbCalculatorDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "carb_calculator.db"
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE submission_logs ADD COLUMN http_status_code INTEGER")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Make carbLogId nullable to support orphaned error logs (errors before CarbLog is saved)
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS submission_logs_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        carbLogId INTEGER,
+                        requestTimestamp INTEGER NOT NULL,
+                        imagePath TEXT,
+                        imageSizeBytes INTEGER,
+                        foodDescription TEXT,
+                        status TEXT NOT NULL,
+                        foodItemsJson TEXT,
+                        totalCarbs REAL,
+                        errorMessage TEXT,
+                        responseTimestamp INTEGER,
+                        requestHeaders TEXT,
+                        responseHeaders TEXT,
+                        responseBody TEXT
+                    )
+                    """.trimIndent()
+                )
+                // Copy all existing rows (no filtering since we now allow null carbLogId)
+                db.execSQL(
+                    """
+                    INSERT INTO submission_logs_new (
+                        id, carbLogId, requestTimestamp, imagePath, imageSizeBytes,
+                        foodDescription, status, foodItemsJson, totalCarbs, errorMessage,
+                        responseTimestamp, requestHeaders, responseHeaders, responseBody
+                    )
+                    SELECT
+                        id, carbLogId, requestTimestamp, imagePath, imageSizeBytes,
+                        foodDescription, status, foodItemsJson, totalCarbs, errorMessage,
+                        responseTimestamp, requestHeaders, responseHeaders, responseBody
+                    FROM submission_logs
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE submission_logs")
+                db.execSQL("ALTER TABLE submission_logs_new RENAME TO submission_logs")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_submission_logs_carbLogId ON submission_logs(carbLogId)")
+            }
+        }
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {

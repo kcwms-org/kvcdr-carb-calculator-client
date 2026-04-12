@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
+import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,8 @@ class CaptureViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
     private val resultCache: AnalysisResultCache,
     private val settingsRepository: SettingsRepository,
+    private val submissionLogRepository: SubmissionLogRepository,
+    private val carbApiCapture: com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CaptureUiState>(CaptureUiState.Idle)
@@ -73,6 +76,21 @@ class CaptureViewModel @Inject constructor(
                 resetDatetime()
                 onSuccess()
             } catch (e: Exception) {
+                // Log the error to the database as an orphaned submission log
+                submissionLogRepository.logRequest(
+                    carbLogId = null,  // No CarbLog yet since analysis failed
+                    imagePath = imageFile?.absolutePath,
+                    imageSizeBytes = imageFile?.length(),
+                    foodDescription = cleanDescription,
+                    status = "error",
+                    foodItemsJson = null,
+                    totalCarbs = null,
+                    errorMessage = e.message ?: "Analysis failed",
+                    responseTimestamp = System.currentTimeMillis(),
+                    requestHeaders = carbApiCapture.requestHeaders,
+                    responseHeaders = carbApiCapture.responseHeaders,
+                    responseBody = carbApiCapture.responseBody,
+                )
                 _uiState.value = CaptureUiState.Error(e.message ?: "Analysis failed")
             }
         }

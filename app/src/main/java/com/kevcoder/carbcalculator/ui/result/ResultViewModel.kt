@@ -93,6 +93,24 @@ class ResultViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isSaving = false, saved = true)
                 onSuccess()
             } catch (e: Exception) {
+                // Log the save failure to the database
+                val result = _uiState.value.result
+                if (result != null) {
+                    submissionLogRepository.logRequest(
+                        carbLogId = null,  // Save failed, so no CarbLog was created
+                        imagePath = result.imagePath,
+                        imageSizeBytes = result.imagePath?.let { java.io.File(it).takeIf { f -> f.exists() }?.length() },
+                        foodDescription = result.foodDescription,
+                        status = "error",
+                        foodItemsJson = null,
+                        totalCarbs = null,
+                        errorMessage = e.message ?: "Failed to save",
+                        responseTimestamp = System.currentTimeMillis(),
+                        requestHeaders = resultCache.getRequestHeaders(),
+                        responseHeaders = resultCache.getResponseHeaders(),
+                        responseBody = resultCache.getResponseBody(),
+                    )
+                }
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
                     error = e.message ?: "Failed to save",

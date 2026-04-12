@@ -7,21 +7,15 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "submission_logs",
-    foreignKeys = [
-        ForeignKey(
-            entity = CarbLogEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["carbLogId"],
-            onDelete = ForeignKey.CASCADE,
-        )
-    ],
     indices = [Index("carbLogId")],
 )
+// Note: Foreign key constraint removed to allow null carbLogId (orphaned error logs).
+// Cascade delete handled manually in CarbRepository.deleteLog()
 data class SubmissionLogEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    /** FK to carb_logs.id — set at insert time when the user saves */
-    val carbLogId: Long,
+    /** FK to carb_logs.id — set at insert time when the user saves. Null for orphaned error logs */
+    val carbLogId: Long?,
     /** Epoch millis when Analyze was tapped */
     val requestTimestamp: Long,
     /** Absolute path to the image file at analysis time (may no longer exist) */
@@ -46,4 +40,6 @@ data class SubmissionLogEntity(
     val responseHeaders: String?,
     /** Raw response body text */
     val responseBody: String?,
+    /** HTTP status code parsed from response headers (e.g. 403, 500). Null if unavailable */
+    val httpStatusCode: Int?,
 )

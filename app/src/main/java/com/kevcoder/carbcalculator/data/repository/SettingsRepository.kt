@@ -17,8 +17,9 @@ class SettingsRepository @Inject constructor(
         dataStore.submissionPurgeInterval,
         dataStore.imageQuality,
         dataStore.saveImagesToDevice,
-    ) { url, env, purgeInterval, imageQuality, saveImagesToDevice ->
-        AppSettings(carbApiUrl = url, dexcomEnv = env, submissionPurgeInterval = purgeInterval, imageQuality = imageQuality, saveImagesToDevice = saveImagesToDevice)
+        dataStore.expandSubmissionsDefault,
+    ) { url, env, purgeInterval, imageQuality, saveImagesToDevice, expandSubmissionsDefault ->
+        AppSettings(carbApiUrl = url, dexcomEnv = env, submissionPurgeInterval = purgeInterval, imageQuality = imageQuality, saveImagesToDevice = saveImagesToDevice, expandSubmissionsDefault = expandSubmissionsDefault)
     }
 
     suspend fun saveApiUrl(url: String) = dataStore.saveCarbApiUrl(url)
@@ -31,6 +32,8 @@ class SettingsRepository @Inject constructor(
     suspend fun saveImageQuality(quality: Int) = dataStore.saveImageQuality(quality)
 
     suspend fun saveSaveImagesToDevice(value: Boolean) = dataStore.saveSaveImagesToDevice(value)
+
+    suspend fun saveExpandSubmissionsDefault(value: Boolean) = dataStore.saveExpandSubmissionsDefault(value)
 
     fun getImageQuality(): Flow<Int> = dataStore.imageQuality
 }

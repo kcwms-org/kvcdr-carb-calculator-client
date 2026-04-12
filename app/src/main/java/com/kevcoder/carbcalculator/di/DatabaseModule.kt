@@ -30,6 +30,8 @@ object DatabaseModule {
                 CarbCalculatorDatabase.MIGRATION_2_3,
                 CarbCalculatorDatabase.MIGRATION_3_4,
                 CarbCalculatorDatabase.MIGRATION_4_5,
+                CarbCalculatorDatabase.MIGRATION_5_6,
+                CarbCalculatorDatabase.MIGRATION_6_7,
             )
             .build()
 

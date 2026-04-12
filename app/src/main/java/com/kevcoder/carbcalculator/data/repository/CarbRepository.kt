@@ -44,6 +44,7 @@ class CarbRepository @Inject constructor(
     private val carbApiService: CarbApiService,
     private val carbApiCapture: CarbApiCapture,
     private val carbLogDao: CarbLogDao,
+    private val submissionLogRepository: SubmissionLogRepository,
     private val moshi: Moshi,
     @Named("storage") private val storageHttpClient: OkHttpClient,
     @ApplicationScope private val applicationScope: CoroutineScope,
@@ -225,6 +226,7 @@ class CarbRepository @Inject constructor(
 
     suspend fun deleteLog(id: Long) = withContext(Dispatchers.IO) {
         carbLogDao.getLogById(id)?.thumbnailPath?.let { File(it).delete() }
+        submissionLogRepository.deleteByParentId(id)
         carbLogDao.deleteLog(id)
     }
 
