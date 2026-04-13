@@ -69,7 +69,17 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.CI_KEYSTORE_BASE64 }}" | base64 --decode > $RUNNER_TEMP/ci-release.keystore
+
       - name: Build debug APK
+        env:
+          CI_KEYSTORE_PATH: ${{ runner.temp }}/ci-release.keystore
+          CI_KEYSTORE_STORE_PASSWORD: ${{ secrets.CI_KEYSTORE_STORE_PASSWORD }}
+          CI_KEYSTORE_KEY_PASSWORD: ${{ secrets.CI_KEYSTORE_KEY_PASSWORD }}
+          CI_KEYSTORE_ALIAS: ${{ secrets.CI_KEYSTORE_ALIAS }}
+          CI_VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact

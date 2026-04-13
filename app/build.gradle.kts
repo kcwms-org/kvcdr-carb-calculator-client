@@ -12,11 +12,13 @@ android {
     namespace = "com.kevcoder.carbcalculator"
     compileSdk = 35
 
+    val ciVersionCode = System.getenv("CI_VERSION_CODE")?.toIntOrNull() ?: 1
+
     defaultConfig {
         applicationId = "com.kevcoder.carbcalculator"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = ciVersionCode
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -39,10 +41,31 @@ android {
         buildConfigField("String", "GIT_COMMIT_SHA", "\"$gitSha\"")
     }
 
+    signingConfigs {
+        create("ci") {
+            val keystorePath = System.getenv("CI_KEYSTORE_PATH")
+            val storePass   = System.getenv("CI_KEYSTORE_STORE_PASSWORD")
+            val keyPass     = System.getenv("CI_KEYSTORE_KEY_PASSWORD")
+            val keyAlias    = System.getenv("CI_KEYSTORE_ALIAS")
+
+            if (keystorePath != null && storePass != null && keyPass != null && keyAlias != null) {
+                storeFile = file(keystorePath)
+                storePassword = storePass
+                keyPassword = keyPass
+                this.keyAlias = keyAlias
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
+
+            val keystorePath = System.getenv("CI_KEYSTORE_PATH")
+            if (keystorePath != null) {
+                signingConfig = signingConfigs.getByName("ci")
+            }
         }
         release {
             isMinifyEnabled = true
