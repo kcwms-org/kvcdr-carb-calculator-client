@@ -8,11 +8,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * OkHttp interceptor that captures the POST request (headers + multipart parts,
- * with the image binary replaced by a size placeholder) and the full response
- * headers + body for the carb API. Stores them in [CarbApiCapture].
+ * OkHttp interceptor that captures all HTTP operations (requests and responses)
+ * with full headers and body. Accumulates them in [CarbApiCapture] for logging.
  *
- * The response body is peeked so Retrofit can still read it normally.
+ * The response body is peeked so downstream handlers (Retrofit, etc.) can still read it normally.
  */
 @Singleton
 class CarbApiCaptureInterceptor @Inject constructor(
@@ -21,22 +20,24 @@ class CarbApiCaptureInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-
-        capture.requestHeaders = buildRequestSummary(request)
+        val requestSummary = buildRequestSummary(request)
 
         val response = chain.proceed(request)
 
-        capture.responseHeaders = buildString {
+        val responseSummary = buildString {
             append("${response.protocol} ${response.code} ${response.message}\n")
             response.headers.forEach { (name, value) -> append("$name: $value\n") }
         }.trimEnd()
 
-        // Peek response body — leaves it readable for Retrofit
-        capture.responseBody = try {
+        // Peek response body — leaves it readable for downstream handlers
+        val responseBody = try {
             response.peekBody(Long.MAX_VALUE).string()
         } catch (_: Exception) {
             null
         }
+
+        // Accumulate all HTTP operations instead of replacing
+        capture.appendOperation(requestSummary, responseSummary, responseBody)
 
         return response
     }

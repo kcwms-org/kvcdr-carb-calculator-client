@@ -4,8 +4,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Holds the raw HTTP exchange (headers + body) for the most-recent carb API call.
- * Populated by [CarbApiCaptureInterceptor] and consumed by [CarbRepository].
+ * Accumulates all HTTP exchanges (requests and responses) with full headers and body.
+ * Populated by [CarbApiCaptureInterceptor] and consumed by view models for logging.
+ *
+ * Operations are accumulated and labelled (GET /presign, PUT S3, POST /analyze) so the
+ * complete request/response flow is captured.
  */
 @Singleton
 class CarbApiCapture @Inject constructor() {
@@ -17,5 +20,34 @@ class CarbApiCapture @Inject constructor() {
         requestHeaders = null
         responseHeaders = null
         responseBody = null
+    }
+
+    /**
+     * Accumulate a new HTTP operation (request + response).
+     * If operations already exist, appends with a separator.
+     */
+    fun appendOperation(reqHeaders: String, respHeaders: String, respBody: String?) {
+        // Append request headers
+        requestHeaders = if (requestHeaders.isNullOrBlank()) {
+            reqHeaders
+        } else {
+            requestHeaders + "\n\n" + reqHeaders
+        }
+
+        // Append response headers
+        responseHeaders = if (responseHeaders.isNullOrBlank()) {
+            respHeaders
+        } else {
+            responseHeaders + "\n\n" + respHeaders
+        }
+
+        // Append response body
+        if (respBody != null && respBody.isNotBlank()) {
+            responseBody = if (responseBody.isNullOrBlank()) {
+                respBody
+            } else {
+                responseBody + "\n\n" + respBody
+            }
+        }
     }
 }
