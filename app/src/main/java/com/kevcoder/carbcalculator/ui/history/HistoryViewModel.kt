@@ -22,11 +22,13 @@ import javax.inject.Inject
 
 /** Sealed class to represent either a successful CarbLog or an orphaned error SubmissionLog */
 sealed interface HistoryItem {
+    val timestamp: Long
+
     data class SuccessfulLog(val carbLog: CarbLog) : HistoryItem {
-        val timestamp: Long get() = carbLog.timestamp
+        override val timestamp: Long get() = carbLog.timestamp
     }
     data class ErrorLog(val submissionLog: SubmissionLog) : HistoryItem {
-        val timestamp: Long get() = submissionLog.requestTimestamp
+        override val timestamp: Long get() = submissionLog.requestTimestamp
     }
 }
 

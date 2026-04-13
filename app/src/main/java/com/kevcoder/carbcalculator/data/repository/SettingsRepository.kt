@@ -4,6 +4,7 @@ import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.domain.model.AppSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,8 +19,15 @@ class SettingsRepository @Inject constructor(
         dataStore.imageQuality,
         dataStore.saveImagesToDevice,
         dataStore.expandSubmissionsDefault,
-    ) { url, env, purgeInterval, imageQuality, saveImagesToDevice, expandSubmissionsDefault ->
-        AppSettings(carbApiUrl = url, dexcomEnv = env, submissionPurgeInterval = purgeInterval, imageQuality = imageQuality, saveImagesToDevice = saveImagesToDevice, expandSubmissionsDefault = expandSubmissionsDefault)
+    ) { values ->
+        AppSettings(
+            carbApiUrl = values[0] as String,
+            dexcomEnv = values[1] as String,
+            submissionPurgeInterval = values[2] as String,
+            imageQuality = values[3] as Int,
+            saveImagesToDevice = values[4] as Boolean,
+            expandSubmissionsDefault = values[5] as Boolean,
+        )
     }
 
     suspend fun saveApiUrl(url: String) = dataStore.saveCarbApiUrl(url)
