@@ -1,6 +1,6 @@
 # Issue #24 — App Update Fails
 
-**Status:** Open
+**Status:** Done — merged via PR #27
 
 ## Context
 
