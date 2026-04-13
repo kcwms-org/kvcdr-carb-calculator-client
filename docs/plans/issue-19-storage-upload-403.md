@@ -24,90 +24,53 @@ Related backend issue: `kcwms-org/kvcdr-carb-calculator#31`.
 
 ## Root Cause
 
-The 403 is thrown from `CarbApiService.analyze()` (step 3, POST /analyze), not from the storage upload (step 2). However, `CarbRepository.analyzeFood()` has a try-catch at a high level that catches any exception and rethrows it as a generic "Storage upload failed" error, conflating all failures into a misleading message.
+The PUT to S3 is returning HTTP 403 with `x-amz-error-code: SignatureDoesNotMatch`. 
 
-Looking at the code structure:
-- Lines 83–98: GET presign + PUT storage (wrappeed in `if (imageFile != null)`)
-- Lines 102–107: POST /analyze (inside the same `if`)
-- Lines 111–113: DELETE cleanup
+**The problem:** The presigned URL was signed for specific headers: `host;x-amz-acl` (per `X-Amz-SignedHeaders`). However, the client is sending **additional headers** that were not in the signed scope:
+- `Content-Type: image/jpeg` — **NOT in the signed headers** ❌
+- `x-amz-acl: public-read` — **IS in the signed headers** ✅
 
-The `carbApiService.analyze()` call (line 102) can throw if the response is not 2xx. This exception bubbles up and is caught by `CaptureViewModel.onAnalyze()`, which calls `submissionLogRepository.logRequest()` with the captured headers/body.
+When S3/DigitalOcean Spaces receives the PUT, it recomputes the signature with all the headers sent by the client. Since the client sent `Content-Type` but it wasn't in the original signature scope, the computed signature doesn't match. Result: HTTP 403 `SignatureDoesNotMatch`.
 
-## Phase 1 — Diagnosis: More Specific Error Messages
-
-### Step 1 — Distinguish between storage and analysis errors
-
-The problem is the blanket "Storage upload failed" message masks which step actually failed. Add more specific error handling:
-
-Instead of a general try-catch, wrap each major step with its own error handler:
-
-**In `CarbRepository.analyzeFood()` (lines 79–124):**
-
+**Why is this happening?** At `CarbRepository.kt:89`, the code builds the request body with:
 ```kotlin
-// Step 1: get presigned upload URL
-val presign = try {
-    carbApiService.presign()
-} catch (e: Exception) {
-    error("Failed to presign upload: ${e.message}")
-}
+.put(imageBytes.toRequestBody("image/jpeg".toMediaType()))
+```
 
-// Step 2: PUT image directly to object storage
+OkHttp automatically adds a `Content-Type` header from the request body's media type. This header is NOT in `presign.requiredHeaders` (which only contains the headers the backend expects to be signed). The backend signed for specific headers, but the client is sending extras.
+
+## Solution: Don't Set Content-Type on the Request Body
+
+The fix is to **remove** the media type from the request body so OkHttp doesn't inject the `Content-Type` header. Then, if `presign.requiredHeaders` contains `Content-Type`, add it explicitly as a header so it's in the signed scope.
+
+**In `CarbRepository.analyzeFood()` (lines 86–90):**
+
+Current code:
+```kotlin
 val putRequest = Request.Builder()
     .url(presign.uploadUrl)
     .apply { presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) } }
     .put(imageBytes.toRequestBody("image/jpeg".toMediaType()))
     .build()
-
-val putResponse = storageHttpClient.newCall(putRequest).execute()
-if (!putResponse.isSuccessful) {
-    val code = putResponse.code
-    putResponse.close()
-    error("Storage upload failed: HTTP $code")
-}
-putResponse.close()
-
-// Step 3: analyze via URL with datetime
-val result = try {
-    carbApiService.analyze(
-        image = null,
-        imageUrl = presign.imageUrl.toRequestBody("text/plain".toMediaType()),
-        text = textBody,
-        datetime = datetimeBody,
-    )
-} catch (e: Exception) {
-    error("Analysis failed: ${e.message}")
-}
 ```
 
-This surfaces which step failed:
-- "Failed to presign upload" → step 1
-- "Storage upload failed: HTTP 403" → step 2 (e.g., S3 issue)
-- "Analysis failed: ..." → step 3 (backend rejection)
+Fixed code:
+```kotlin
+val putRequest = Request.Builder()
+    .url(presign.uploadUrl)
+    .apply { presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) } }
+    .put(imageBytes.toRequestBody())  // No media type → no automatic Content-Type header
+    .build()
+```
 
-The `CaptureViewModel.onAnalyze()` catch block will now receive the specific error message.
-
-## Phase 2 — Root Cause Analysis (once error is specific)
-
-Once the error message says "Analysis failed: HTTP 403" (or with details from the backend), the root cause is in the `POST /analyze` call. This is a **backend issue** — the backend is rejecting the analyze request.
-
-Possible backend causes:
-- The `imageUrl` parameter is invalid or the image hasn't been written to storage yet
-- The backend authentication/authorization check is failing (e.g., session expired, user not authorized)
-- The image format or size doesn't meet backend requirements
-- The backend's presign validation failed (e.g., wrong bucket, wrong path)
-
-**Backend action:** Check the backend logs for the `/analyze` endpoint. The 403 response body (XML or JSON) should contain a specific error code or message. File a detailed issue on `kcwms-org/kvcdr-carb-calculator#31` with:
-1. The exact HTTP 403 response body
-2. Backend logs from the analyze endpoint
-3. Whether presign/PUT are succeeding but analyze is being rejected
+**Why this works:** By calling `toRequestBody()` with no argument, OkHttp creates a `RequestBody` with no media type. OkHttp will NOT inject a `Content-Type` header. Since we're already calling `presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) }`, any `Content-Type` that the backend signed for is already added explicitly. The signature matches, and S3/Spaces accepts the PUT.
 
 ## Verification
 
-1. Deploy the `CarbRepository` changes (more specific error messages) to a test device.
-2. Reproduce the 403: take a photo, tap Analyze. The error message on the Capture screen should now show "Analysis failed: HTTP 403" or more specific details.
-3. Open History → find the error log card → expand "Response" → copy the full response body from the POST /analyze call.
-4. Share that response with the backend team on `kcwms-org/kvcdr-carb-calculator#31`.
-5. Backend team debugs the analyze endpoint and determines why it's rejecting the request (despite successful presign + PUT).
-6. Once backend is fixed: redeploy and verify success. A successful analyze returns HTTP 200 with the analysis result.
-7. Confirm the full flow: DELETE cleanup fires, and the analysis result is displayed on the Result screen.
-8. Regression: submit a second image immediately after — confirm consistent behavior.
+1. Make the one-line change in `CarbRepository.analyzeFood()` (remove media type from `toRequestBody()`)
+2. Rebuild and deploy to a test device
+3. Reproduce the flow: take a photo, tap Analyze
+4. Expected result: PUT returns HTTP 200, image uploads successfully, analyze returns 200 with results
+5. Verify in History: the log should show successful presign + successful upload with no 403 errors
+6. Regression test: submit 2–3 more images to confirm the fix is stable
+
