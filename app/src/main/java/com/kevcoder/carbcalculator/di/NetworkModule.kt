@@ -56,8 +56,10 @@ object NetworkModule {
     @Named("storage")
     fun provideStorageOkHttpClient(
         logging: HttpLoggingInterceptor,
+        captureInterceptor: CarbApiCaptureInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor(captureInterceptor)
             .addInterceptor(logging)
             .build()
 
