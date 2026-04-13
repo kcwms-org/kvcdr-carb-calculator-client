@@ -33,6 +33,7 @@ class CarbRepositoryTest {
     private lateinit var carbApiService: CarbApiService
     private lateinit var carbApiCapture: CarbApiCapture
     private lateinit var carbLogDao: CarbLogDao
+    private lateinit var submissionLogRepository: com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
     private lateinit var context: android.content.Context
     private lateinit var moshi: Moshi
     private lateinit var storageHttpClient: OkHttpClient
@@ -51,13 +52,14 @@ class CarbRepositoryTest {
         carbApiService = mockk()
         carbApiCapture = CarbApiCapture()
         carbLogDao = mockk()
+        submissionLogRepository = mockk(relaxed = true)
         context = mockk()
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
         storageHttpClient = mockk()
         applicationScope = CoroutineScope(UnconfinedTestDispatcher())
 
         every { context.filesDir } returns File(System.getProperty("java.io.tmpdir")!!)
-        repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, moshi, storageHttpClient, applicationScope)
+        repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, submissionLogRepository, moshi, storageHttpClient, applicationScope)
     }
 
     private fun mockSuccessfulPut() {
