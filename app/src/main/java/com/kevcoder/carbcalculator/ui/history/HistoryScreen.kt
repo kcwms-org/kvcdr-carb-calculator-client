@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,8 +44,8 @@ fun HistoryScreen(
     onNavigateBack: () -> Unit,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
-    val logs by viewModel.logs.collectAsState()
-    val expandedLogId by viewModel.expandedLogId.collectAsState()
+    val historyItems by viewModel.historyItems.collectAsState()
+    val expandedItemId by viewModel.expandedItemId.collectAsState()
     val expandedSubmissions by viewModel.expandedSubmissions.collectAsState()
     val viewingImageLog by viewModel.viewingImageLog.collectAsState()
 
@@ -60,7 +61,7 @@ fun HistoryScreen(
             )
         },
     ) { padding ->
-        if (logs.isEmpty()) {
+        if (historyItems.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -77,16 +78,34 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp),
             ) {
-                items(logs, key = { it.id }) { log ->
-                    val isExpanded = expandedLogId == log.id
-                    CarbLogCard(
-                        log = log,
-                        isExpanded = isExpanded,
-                        submissions = if (isExpanded) expandedSubmissions else emptyList(),
-                        onToggleExpand = { viewModel.toggleExpand(log.id) },
-                        onDelete = { viewModel.deleteLog(log.id) },
-                        onImageClick = { viewModel.onImageClick(log) },
-                    )
+                items(historyItems, key = { item ->
+                    when (item) {
+                        is HistoryItem.SuccessfulLog -> "carb-${item.carbLog.id}"
+                        is HistoryItem.ErrorLog -> "error-${item.submissionLog.id}"
+                    }
+                }) { item ->
+                    when (item) {
+                        is HistoryItem.SuccessfulLog -> {
+                            val isExpanded = expandedItemId == "carb-${item.carbLog.id}"
+                            CarbLogCard(
+                                log = item.carbLog,
+                                isExpanded = isExpanded,
+                                submissions = if (isExpanded) expandedSubmissions else emptyList(),
+                                onToggleExpand = { viewModel.toggleExpand("carb-${item.carbLog.id}") },
+                                onDelete = { viewModel.deleteSuccessfulLog(item.carbLog.id) },
+                                onImageClick = { viewModel.onImageClick(item.carbLog) },
+                            )
+                        }
+                        is HistoryItem.ErrorLog -> {
+                            val isExpanded = expandedItemId == "error-${item.submissionLog.id}"
+                            ErrorLogCard(
+                                submissionLog = item.submissionLog,
+                                isExpanded = isExpanded,
+                                onToggleExpand = { viewModel.toggleExpand("error-${item.submissionLog.id}") },
+                                onDelete = { viewModel.deleteErrorLog(item.submissionLog.id) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -94,6 +113,131 @@ fun HistoryScreen(
         // Full-screen image viewer
         viewingImageLog?.let { log ->
             FullScreenImageViewer(log = log, onDismiss = { viewModel.onImageViewerDismiss() })
+        }
+    }
+}
+
+@Composable
+private fun ErrorLogCard(
+    submissionLog: SubmissionLog,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(2.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(12.dp)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = submissionLog.foodDescription ?: "Failed submission",
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = submissionLog.errorMessage ?: "Unknown error",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 2,
+                    )
+                    submissionLog.httpStatusCode?.let { code ->
+                        Text(
+                            text = "HTTP $code",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    Text(
+                        text = dateFormat.format(Date(submissionLog.requestTimestamp)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            // Chevron row to expand/collapse details
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpand)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Error details",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (isExpanded) {
+                HorizontalDivider()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val context = LocalContext.current
+                    var requestExpanded by remember { mutableStateOf(false) }
+                    var responseExpanded by remember { mutableStateOf(false) }
+
+                    submissionLog.requestHeaders?.let { headers ->
+                        HttpSection(
+                            label = "Request",
+                            content = headers,
+                            expanded = requestExpanded,
+                            onToggle = { requestExpanded = !requestExpanded },
+                            onCopy = { copyToClipboard(context, "request_${submissionLog.id}", headers) },
+                        )
+                    }
+
+                    submissionLog.responseHeaders?.let { headers ->
+                        HttpSection(
+                            label = "Response",
+                            content = headers,
+                            expanded = responseExpanded,
+                            onToggle = { responseExpanded = !responseExpanded },
+                            onCopy = { copyToClipboard(context, "response_${submissionLog.id}", headers) },
+                        )
+                    }
+
+                    submissionLog.responseBody?.let { body ->
+                        Text(
+                            text = "Response body: $body",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            maxLines = 3,
+                        )
+                    }
+                }
+            }
         }
     }
 }

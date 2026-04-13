@@ -23,9 +23,9 @@ class SubmissionLogRepository @Inject constructor(
     private val foodItemListType = Types.newParameterizedType(List::class.java, FoodItemJson::class.java)
     private val foodItemJsonAdapter = moshi.adapter<List<FoodItemJson>>(foodItemListType)
 
-    /** Insert a completed submission log row linked to an existing CarbLog. */
+    /** Insert a submission log row. carbLogId may be null for orphaned error logs. */
     suspend fun logRequest(
-        carbLogId: Long,
+        carbLogId: Long?,
         imagePath: String?,
         imageSizeBytes: Long?,
         foodDescription: String?,
@@ -38,6 +38,7 @@ class SubmissionLogRepository @Inject constructor(
         responseHeaders: String?,
         responseBody: String?,
     ): Long = withContext(Dispatchers.IO) {
+        val httpStatusCode = responseHeaders?.let { extractHttpStatusCode(it) }
         dao.insert(
             SubmissionLogEntity(
                 carbLogId = carbLogId,
@@ -53,6 +54,7 @@ class SubmissionLogRepository @Inject constructor(
                 requestHeaders = requestHeaders,
                 responseHeaders = responseHeaders,
                 responseBody = responseBody,
+                httpStatusCode = httpStatusCode,
             )
         )
     }
@@ -60,8 +62,30 @@ class SubmissionLogRepository @Inject constructor(
     fun getByParentId(carbLogId: Long): Flow<List<SubmissionLog>> =
         dao.getByParentId(carbLogId).map { entities -> entities.map { it.toDomain() } }
 
+    fun getOrphanedErrorLogs(): Flow<List<SubmissionLog>> =
+        dao.getOrphanedErrorLogs().map { entities -> entities.map { it.toDomain() } }
+
+    suspend fun deleteSubmissionLog(id: Long) = withContext(Dispatchers.IO) {
+        dao.deleteById(id)
+    }
+
+    suspend fun deleteByParentId(carbLogId: Long) = withContext(Dispatchers.IO) {
+        dao.deleteByParentId(carbLogId)
+    }
+
     suspend fun purgeOlderThan(cutoffMs: Long) = withContext(Dispatchers.IO) {
         dao.deleteOlderThan(cutoffMs)
+    }
+
+    private fun extractHttpStatusCode(responseHeaders: String): Int? {
+        // Extract status code from response headers like "HTTP/1.1 403 Forbidden"
+        return try {
+            val statusLine = responseHeaders.lines().firstOrNull() ?: return null
+            val parts = statusLine.split(" ")
+            if (parts.size >= 2) parts[1].toIntOrNull() else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun SubmissionLogEntity.toDomain(): SubmissionLog {
@@ -90,6 +114,7 @@ class SubmissionLogRepository @Inject constructor(
             requestHeaders = requestHeaders,
             responseHeaders = responseHeaders,
             responseBody = responseBody,
+            httpStatusCode = httpStatusCode,
         )
     }
 }

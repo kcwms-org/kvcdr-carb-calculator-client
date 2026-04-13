@@ -35,7 +35,7 @@ data class CarbLog(
 
 data class SubmissionLog(
     val id: Long,
-    val carbLogId: Long,
+    val carbLogId: Long?,  // Null for orphaned error logs
     val requestTimestamp: Long,
     val imagePath: String?,
     val imageSizeBytes: Long?,
@@ -52,6 +52,8 @@ data class SubmissionLog(
     val responseHeaders: String?,
     /** Raw response body */
     val responseBody: String?,
+    /** HTTP status code parsed from response (e.g. 403, 500) */
+    val httpStatusCode: Int? = null,
 )
 
 data class AppSettings(
@@ -60,4 +62,5 @@ data class AppSettings(
     val submissionPurgeInterval: String,
     val imageQuality: Int,
     val saveImagesToDevice: Boolean = false,
+    val expandSubmissionsDefault: Boolean = false,  // false = collapsed by default
 )

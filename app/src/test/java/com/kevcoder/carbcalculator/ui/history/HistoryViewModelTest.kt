@@ -1,8 +1,10 @@
 package com.kevcoder.carbcalculator.ui.history
 
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.CarbLog
+import com.kevcoder.carbcalculator.domain.model.SubmissionLog
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -24,6 +26,7 @@ class HistoryViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var carbRepository: CarbRepository
     private lateinit var submissionLogRepository: SubmissionLogRepository
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var viewModel: HistoryViewModel
 
     private val fakeLogs = listOf(
@@ -52,9 +55,11 @@ class HistoryViewModelTest {
         Dispatchers.setMain(testDispatcher)
         carbRepository = mockk()
         submissionLogRepository = mockk()
+        settingsRepository = mockk(relaxed = true)
         every { carbRepository.getLogs() } returns flowOf(fakeLogs)
+        every { submissionLogRepository.getOrphanedErrorLogs() } returns flowOf(emptyList())
         every { submissionLogRepository.getByParentId(any()) } returns flowOf(emptyList())
-        viewModel = HistoryViewModel(carbRepository, submissionLogRepository)
+        viewModel = HistoryViewModel(carbRepository, submissionLogRepository, settingsRepository)
     }
 
     @After
@@ -63,30 +68,49 @@ class HistoryViewModelTest {
     }
 
     @Test
-    fun `initial logs are empty before flow emits`() {
-        assertTrue(viewModel.logs.value.isEmpty())
+    fun `initial historyItems are empty before flow emits`() {
+        assertTrue(viewModel.historyItems.value.isEmpty())
     }
 
     @Test
-    fun `logs state populated from repository flow`() = runTest {
+    fun `historyItems state populated from repository flow`() = runTest {
         advanceUntilIdle()
-        assertEquals(fakeLogs, viewModel.logs.value)
+        assertEquals(2, viewModel.historyItems.value.size)
+        assertTrue(viewModel.historyItems.value[0] is HistoryItem.SuccessfulLog)
+        assertTrue(viewModel.historyItems.value[1] is HistoryItem.SuccessfulLog)
     }
 
     @Test
-    fun `deleteLog calls repository`() = runTest {
+    fun `deleteSuccessfulLog calls repository`() = runTest {
         coEvery { carbRepository.deleteLog(1L) } just Runs
-        viewModel.deleteLog(1L)
+        viewModel.deleteSuccessfulLog(1L)
         advanceUntilIdle()
         coVerify { carbRepository.deleteLog(1L) }
     }
 
     @Test
-    fun `toggleExpand sets expandedLogId`() = runTest {
-        assertNull(viewModel.expandedLogId.value)
-        viewModel.toggleExpand(1L)
-        assertEquals(1L, viewModel.expandedLogId.value)
-        viewModel.toggleExpand(1L)
-        assertNull(viewModel.expandedLogId.value)
+    fun `deleteErrorLog calls repository`() = runTest {
+        coEvery { submissionLogRepository.deleteSubmissionLog(1L) } just Runs
+        viewModel.deleteErrorLog(1L)
+        advanceUntilIdle()
+        coVerify { submissionLogRepository.deleteSubmissionLog(1L) }
+    }
+
+    @Test
+    fun `toggleExpand sets expandedItemId with carb- prefix`() = runTest {
+        assertNull(viewModel.expandedItemId.value)
+        viewModel.toggleExpand("carb-1")
+        assertEquals("carb-1", viewModel.expandedItemId.value)
+        viewModel.toggleExpand("carb-1")
+        assertNull(viewModel.expandedItemId.value)
+    }
+
+    @Test
+    fun `toggleExpand sets expandedItemId with error- prefix`() = runTest {
+        assertNull(viewModel.expandedItemId.value)
+        viewModel.toggleExpand("error-1")
+        assertEquals("error-1", viewModel.expandedItemId.value)
+        viewModel.toggleExpand("error-1")
+        assertNull(viewModel.expandedItemId.value)
     }
 }

@@ -15,6 +15,15 @@ interface SubmissionLogDao {
     @Query("SELECT * FROM submission_logs WHERE carbLogId = :carbLogId ORDER BY requestTimestamp DESC")
     fun getByParentId(carbLogId: Long): Flow<List<SubmissionLogEntity>>
 
+    @Query("SELECT * FROM submission_logs WHERE carbLogId IS NULL ORDER BY requestTimestamp DESC")
+    fun getOrphanedErrorLogs(): Flow<List<SubmissionLogEntity>>
+
     @Query("DELETE FROM submission_logs WHERE requestTimestamp < :cutoffTimestamp")
     suspend fun deleteOlderThan(cutoffTimestamp: Long)
+
+    @Query("DELETE FROM submission_logs WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM submission_logs WHERE carbLogId = :carbLogId")
+    suspend fun deleteByParentId(carbLogId: Long)
 }

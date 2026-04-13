@@ -26,6 +26,8 @@ class CaptureViewModelTest {
     private lateinit var carbRepository: CarbRepository
     private lateinit var resultCache: AnalysisResultCache
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var submissionLogRepository: com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
+    private lateinit var carbApiCapture: com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
     private lateinit var viewModel: CaptureViewModel
 
     @Before
@@ -34,8 +36,10 @@ class CaptureViewModelTest {
         carbRepository = mockk()
         resultCache = mockk(relaxed = true)
         settingsRepository = mockk()
+        submissionLogRepository = mockk(relaxed = true)
+        carbApiCapture = mockk(relaxed = true)
         every { settingsRepository.getImageQuality() } returns kotlinx.coroutines.flow.flowOf(AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY)
-        viewModel = CaptureViewModel(carbRepository, resultCache, settingsRepository)
+        viewModel = CaptureViewModel(carbRepository, resultCache, settingsRepository, submissionLogRepository, carbApiCapture)
     }
 
     @After

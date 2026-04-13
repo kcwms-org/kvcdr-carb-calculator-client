@@ -26,6 +26,7 @@ class AppPreferencesDataStore @Inject constructor(
         val SUBMISSION_PURGE_INTERVAL = stringPreferencesKey("submission_purge_interval")
         val IMAGE_QUALITY = intPreferencesKey("image_quality")
         val SAVE_IMAGES_TO_DEVICE = booleanPreferencesKey("save_images_to_device")
+        val EXPAND_SUBMISSIONS_DEFAULT = booleanPreferencesKey("expand_submissions_default")
 
         const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
@@ -61,6 +62,10 @@ class AppPreferencesDataStore @Inject constructor(
         prefs[SAVE_IMAGES_TO_DEVICE] ?: false
     }
 
+    val expandSubmissionsDefault: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[EXPAND_SUBMISSIONS_DEFAULT] ?: false
+    }
+
     suspend fun saveCarbApiUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
     }
@@ -79,5 +84,9 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun saveSaveImagesToDevice(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[SAVE_IMAGES_TO_DEVICE] = value }
+    }
+
+    suspend fun saveExpandSubmissionsDefault(value: Boolean) {
+        context.dataStore.edit { prefs -> prefs[EXPAND_SUBMISSIONS_DEFAULT] = value }
     }
 }

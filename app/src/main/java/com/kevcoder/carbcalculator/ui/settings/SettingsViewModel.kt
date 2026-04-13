@@ -23,6 +23,7 @@ data class SettingsUiState(
     val submissionPurgeInterval: String = AppPreferencesDataStore.DEFAULT_PURGE_INTERVAL,
     val imageQuality: Int = AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY,
     val saveImagesToDevice: Boolean = false,
+    val expandSubmissionsDefault: Boolean = false,
 )
 
 @HiltViewModel
@@ -54,6 +55,7 @@ class SettingsViewModel @Inject constructor(
                     submissionPurgeInterval = settings.submissionPurgeInterval,
                     imageQuality = settings.imageQuality,
                     saveImagesToDevice = settings.saveImagesToDevice,
+                    expandSubmissionsDefault = settings.expandSubmissionsDefault,
                 )
             }
         }
@@ -128,6 +130,13 @@ class SettingsViewModel @Inject constructor(
             ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
             request,
         )
+    }
+
+    fun onExpandSubmissionsDefaultChanged(value: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveExpandSubmissionsDefault(value)
+            _saveSuccessEvent.emit(Unit)
+        }
     }
 
     companion object {
