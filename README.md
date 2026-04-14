@@ -81,13 +81,46 @@ The APK is copied out of the container to `./app-debug.apk`. Transfer it to your
 
 ## CI/CD
 
-Bitbucket Pipelines runs on every push to `main` and on all PRs:
+GitHub Actions runs on every push to `main` and on all PRs:
 
 1. `lint`
 2. `test` (unit tests)
 3. `assembleDebug`
 
-The debug APK is stored as a pipeline artifact on `main` builds and is downloadable from the Pipelines UI in Bitbucket for 14 days.
+The debug APK is stored as a build artifact on `main` builds.
+
+### Setting up the keystore for CI builds
+
+The CI pipeline signs APKs using a release keystore. If you need to regenerate it (e.g., after losing the original):
+
+**1. Generate a new keystore:**
+
+```bash
+keytool -genkeypair \
+  -alias ci-key \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000 \
+  -keystore ci-release.keystore \
+  -storepass "YOUR_PASSWORD" \
+  -keypass "YOUR_PASSWORD" \
+  -dname "CN=CI, OU=CI, O=kcwms, L=Unknown, ST=Unknown, C=AU"
+```
+
+**2. Base64-encode the keystore and set GitHub secrets:**
+
+Use `gh secret set --body` to avoid whitespace errors (trailing newlines break the build):
+
+```bash
+KEYSTORE_B64=$(base64 -w 0 ci-release.keystore)
+
+gh secret set CI_KEYSTORE_BASE64 --repo kcwms-org/kvcdr-carb-calculator-client --body "$KEYSTORE_B64"
+gh secret set CI_KEYSTORE_ALIAS --repo kcwms-org/kvcdr-carb-calculator-client --body "ci-key"
+gh secret set CI_KEYSTORE_STORE_PASSWORD --repo kcwms-org/kvcdr-carb-calculator-client --body "YOUR_PASSWORD"
+gh secret set CI_KEYSTORE_KEY_PASSWORD --repo kcwms-org/kvcdr-carb-calculator-client --body "YOUR_PASSWORD"
+```
+
+> **⚠️ Important**: Always use `gh secret set --body` instead of pasting into the GitHub web UI. Copy-pasting passwords into the web UI can include trailing newlines or smart quotes, causing the build to fail with "keystore password was incorrect". Using `gh secret set --body` ensures the value is stored exactly as-is.
 
 ---
 
