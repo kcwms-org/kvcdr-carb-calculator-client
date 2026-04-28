@@ -1,6 +1,9 @@
 package com.kevcoder.carbcalculator.ui.settings
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -21,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import java.io.File
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -331,6 +336,64 @@ fun SettingsScreen(
                             onClick = { viewModel.onSubmissionPurgeIntervalChanged(value) },
                             label = { Text(label) },
                         )
+                    }
+                }
+
+                HorizontalDivider()
+
+                // --- Backup & Restore ---
+                Text("Backup & Restore", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Export settings and history to a JSON file in Downloads, or import from a previously exported file.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                val context = LocalContext.current
+                val importLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri ->
+                    uri?.let {
+                        context.contentResolver.openInputStream(it)?.use { stream ->
+                            val tempFile = File(context.cacheDir, "import-backup.json")
+                            tempFile.outputStream().use { output ->
+                                stream.copyTo(output)
+                            }
+                            viewModel.onImportBackup(tempFile)
+                        }
+                    }
+                }
+
+                LaunchedEffect(viewModel.backupEvent) {
+                    viewModel.backupEvent.collectLatest { event ->
+                        when (event) {
+                            is BackupEvent.ExportSuccess ->
+                                Toast.makeText(context, "Backup saved to ${event.filePath}", Toast.LENGTH_LONG).show()
+                            is BackupEvent.ImportSuccess ->
+                                Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                            is BackupEvent.Error ->
+                                Toast.makeText(context, "Error: ${event.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Button(
+                        onClick = { viewModel.onExportBackup() },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Export")
+                    }
+                    Button(
+                        onClick = { importLauncher.launch("application/json") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Import")
                     }
                 }
 
