@@ -1,6 +1,6 @@
 # Issue #37 — Import/Export settings and history
 
-**Status:** Ready to implement
+**Status:** Done — merged via PR #38
 
 ## Summary
 
