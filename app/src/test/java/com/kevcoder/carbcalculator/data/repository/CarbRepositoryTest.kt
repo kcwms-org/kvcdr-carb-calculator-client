@@ -6,7 +6,6 @@ import com.kevcoder.carbcalculator.data.remote.carbapi.AnalysisResponse
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.data.remote.carbapi.FoodItemResponse
-import com.kevcoder.carbcalculator.data.util.ImageProcessor
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
@@ -47,46 +46,34 @@ class CarbRepositoryTest {
         applicationScope = CoroutineScope(UnconfinedTestDispatcher())
 
         every { context.filesDir } returns File(System.getProperty("java.io.tmpdir")!!)
-        mockkObject(ImageProcessor)
-        every { ImageProcessor.processForUpload(any(), any(), any()) } returns byteArrayOf(1, 2, 3)
         repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, submissionLogRepository, moshi, applicationScope)
     }
 
     @Test
-    fun `analyzeFood with image maps API response to domain AnalysisResult`() = runTest {
-        val tempFile = File.createTempFile("test_photo", ".jpg")
-        try {
-            val apiResponse = AnalysisResponse(
-                items = listOf(FoodItemResponse("Apple", 25f), FoodItemResponse("Banana", 27f)),
-                totalCarbsGrams = 52f,
-            )
-            coEvery { carbApiService.analyze(any(), any(), any()) } returns apiResponse
+    fun `analyzeFood with null image and text returns API result`() = runTest {
+        val apiResponse = AnalysisResponse(
+            items = listOf(FoodItemResponse("Apple", 25f), FoodItemResponse("Banana", 27f)),
+            totalCarbsGrams = 52f,
+        )
+        coEvery { carbApiService.analyze(null, any(), any()) } returns apiResponse
 
-            val result = repository.analyzeFood(tempFile, "Fruit bowl")
+        val result = repository.analyzeFood(null, "Fruit bowl")
 
-            assertEquals(2, result.analysisResult.items.size)
-            assertEquals("Apple", result.analysisResult.items[0].name)
-            assertEquals(25f, result.analysisResult.items[0].estimatedCarbs)
-            assertEquals(52f, result.analysisResult.totalCarbs)
-            assertEquals("Fruit bowl", result.analysisResult.foodDescription)
-            assertEquals(tempFile.absolutePath, result.analysisResult.imagePath)
-            coVerify { carbApiService.analyze(any(), any(), any()) }
-        } finally {
-            tempFile.delete()
-        }
+        assertEquals(2, result.analysisResult.items.size)
+        assertEquals("Apple", result.analysisResult.items[0].name)
+        assertEquals(25f, result.analysisResult.items[0].estimatedCarbs)
+        assertEquals(52f, result.analysisResult.totalCarbs)
+        assertEquals("Fruit bowl", result.analysisResult.foodDescription)
+        assertNull(result.analysisResult.imagePath)
+        coVerify { carbApiService.analyze(null, any(), any()) }
     }
 
     @Test
     fun `analyzeFood throws when API analyze fails`() = runTest {
-        val tempFile = File.createTempFile("test_photo", ".jpg")
-        try {
-            coEvery { carbApiService.analyze(any(), any(), any()) } throws RuntimeException("API error")
+        coEvery { carbApiService.analyze(null, any(), any()) } throws RuntimeException("API error")
 
-            assertThrows(RuntimeException::class.java) {
-                kotlinx.coroutines.runBlocking { repository.analyzeFood(tempFile, null) }
-            }
-        } finally {
-            tempFile.delete()
+        assertThrows(RuntimeException::class.java) {
+            kotlinx.coroutines.runBlocking { repository.analyzeFood(null, "Fruit bowl") }
         }
     }
 
