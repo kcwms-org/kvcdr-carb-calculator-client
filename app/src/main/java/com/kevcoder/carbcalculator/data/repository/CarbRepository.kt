@@ -1,15 +1,14 @@
 package com.kevcoder.carbcalculator.data.repository
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.provider.MediaStore
-import androidx.core.content.FileProvider
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
+import com.kevcoder.carbcalculator.data.util.ImageProcessor
 import com.kevcoder.carbcalculator.di.ApplicationScope
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.CarbLog
@@ -25,16 +24,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Base64
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 import android.util.Log
 
@@ -46,7 +42,6 @@ class CarbRepository @Inject constructor(
     private val carbLogDao: CarbLogDao,
     private val submissionLogRepository: SubmissionLogRepository,
     private val moshi: Moshi,
-    @Named("storage") private val storageHttpClient: OkHttpClient,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) {
     private val foodItemListType = Types.newParameterizedType(List::class.java, FoodItemJson::class.java)
@@ -71,59 +66,31 @@ class CarbRepository @Inject constructor(
             carbApiCapture.clear()
 
             val textBody = description?.toRequestBody("text/plain".toMediaType())
-
-            // Format datetime as RFC 3339 string, or use now if not provided
             val datetimeStr = (datetime ?: OffsetDateTime.now()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
             val datetimeBody = datetimeStr.toRequestBody("text/plain".toMediaType())
 
-            val response = if (imageFile != null) {
-                val imageBytes = compressImage(imageFile, imageQuality.coerceIn(1, 100))
-
-                // Step 1: get presigned upload URL
-                val presign = carbApiService.presign()
-
-                // Step 2: PUT image directly to object storage
-                val putRequest = Request.Builder()
-                    .url(presign.uploadUrl)
-                    .apply { presign.requiredHeaders.forEach { (k, v) -> addHeader(k, v) } }
-                    .put(imageBytes.toRequestBody("image/jpeg".toMediaType()))
-                    .build()
-
-                val putResponse = storageHttpClient.newCall(putRequest).execute()
-                if (!putResponse.isSuccessful) {
-                    val code = putResponse.code
-                    putResponse.close()
-                    error("Storage upload failed: HTTP $code")
-                }
-                putResponse.close()
-
-                // Step 3: analyze via URL with datetime
-                val imageUrlBody = presign.imageUrl.toRequestBody("text/plain".toMediaType())
-                val result = carbApiService.analyze(
-                    image = null,
-                    imageUrl = imageUrlBody,
-                    text = textBody,
-                    datetime = datetimeBody,
+            val imagePart = imageFile?.let { file ->
+                val bytes = ImageProcessor.processForUpload(
+                    file = file,
+                    quality = imageQuality.coerceIn(1, 100),
                 )
-
-                // Step 4: fire-and-forget cleanup
-                val key = presign.key
-                applicationScope.launch {
-                    try { carbApiService.deleteUpload(key) } catch (_: Exception) {}
+                if (bytes.size > MAX_UPLOAD_BYTES) {
+                    error("Compressed image is ${bytes.size} bytes, exceeding $MAX_UPLOAD_BYTES byte limit")
                 }
-
-                result
-            } else {
-                // Text-only: skip presign/PUT, send description and datetime directly
-                carbApiService.analyze(
-                    image = null,
-                    imageUrl = null,
-                    text = textBody,
-                    datetime = datetimeBody,
+                Log.d("CarbRepository", "Uploading image: ${bytes.size} bytes")
+                MultipartBody.Part.createFormData(
+                    "image",
+                    "capture.jpg",
+                    bytes.toRequestBody("image/jpeg".toMediaType()),
                 )
             }
 
-            // Decode base64 image data from response
+            val response = carbApiService.analyze(
+                image = imagePart,
+                text = textBody,
+                datetime = datetimeBody,
+            )
+
             val imageData = response.images?.firstOrNull()?.data?.let {
                 try {
                     Base64.getDecoder().decode(it)
@@ -133,7 +100,6 @@ class CarbRepository @Inject constructor(
                 }
             }
 
-            // Parse datetime from response (RFC 3339 string) to epoch millis
             val responseDateTime = response.datetime?.let {
                 try {
                     java.time.Instant.parse(it).toEpochMilli()
@@ -173,7 +139,6 @@ class CarbRepository @Inject constructor(
             } else null
         }
 
-        // Save image to device gallery if enabled and we have image data
         if (saveImagesToDevice && result.imageData != null) {
             applicationScope.launch {
                 try {
@@ -230,25 +195,10 @@ class CarbRepository @Inject constructor(
         carbLogDao.deleteLog(id)
     }
 
-    private fun compressImage(file: File, quality: Int): ByteArray {
-        return try {
-            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                ?: return file.readBytes()
-            ByteArrayOutputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
-                bitmap.recycle()
-                out.toByteArray()
-            }
-        } catch (_: Exception) {
-            file.readBytes()
-        }
-    }
-
     private suspend fun saveImageToGallery(context: Context, imageData: ByteArray) {
         withContext(Dispatchers.IO) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // API 29+: use ContentResolver with MediaStore
                     val contentValues = android.content.ContentValues().apply {
                         put(MediaStore.Images.Media.DISPLAY_NAME, "carb-${System.currentTimeMillis()}.jpg")
                         put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
@@ -262,7 +212,6 @@ class CarbRepository @Inject constructor(
                         stream.write(imageData)
                     }
                 } else {
-                    // API < 29: use deprecated but functional insertImage
                     @Suppress("DEPRECATION")
                     MediaStore.Images.Media.insertImage(
                         context.contentResolver,
@@ -275,5 +224,9 @@ class CarbRepository @Inject constructor(
                 Log.e("CarbRepository", "saveImageToGallery failed", e)
             }
         }
+    }
+
+    companion object {
+        private const val MAX_UPLOAD_BYTES = 900_000
     }
 }

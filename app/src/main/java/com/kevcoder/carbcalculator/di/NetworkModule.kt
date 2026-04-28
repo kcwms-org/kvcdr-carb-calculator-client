@@ -53,18 +53,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @Named("storage")
-    fun provideStorageOkHttpClient(
-        logging: HttpLoggingInterceptor,
-        captureInterceptor: CarbApiCaptureInterceptor,
-    ): OkHttpClient =
-        OkHttpClient.Builder()
-            .addInterceptor(captureInterceptor)
-            .addInterceptor(logging)
-            .build()
-
-    @Provides
-    @Singleton
     @ApplicationScope
     fun provideApplicationScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Default)

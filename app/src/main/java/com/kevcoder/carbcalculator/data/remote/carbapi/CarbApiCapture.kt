@@ -7,8 +7,7 @@ import javax.inject.Singleton
  * Accumulates all HTTP exchanges (requests and responses) with full headers and body.
  * Populated by [CarbApiCaptureInterceptor] and consumed by view models for logging.
  *
- * Operations are accumulated and labelled (GET /presign, PUT S3, POST /analyze) so the
- * complete request/response flow is captured.
+ * The capture covers POST /analyze (the only outbound carb-API call).
  */
 @Singleton
 class CarbApiCapture @Inject constructor() {

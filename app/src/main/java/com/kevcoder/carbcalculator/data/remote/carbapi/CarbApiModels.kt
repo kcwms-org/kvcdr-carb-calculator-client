@@ -27,10 +27,3 @@ data class AnalysisResponse(
     @Json(name = "images")           val images: List<ImageDataResponse>? = null,
 )
 
-@JsonClass(generateAdapter = true)
-data class PresignResponse(
-    @Json(name = "upload_url")       val uploadUrl: String,
-    @Json(name = "image_url")        val imageUrl: String,
-    @Json(name = "key")              val key: String,
-    @Json(name = "required_headers") val requiredHeaders: Map<String, String>,
-)
