@@ -6,6 +6,7 @@ import com.kevcoder.carbcalculator.data.remote.carbapi.AnalysisResponse
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
 import com.kevcoder.carbcalculator.data.remote.carbapi.FoodItemResponse
+import com.kevcoder.carbcalculator.data.util.ImageProcessor
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
 import com.kevcoder.carbcalculator.domain.model.FoodItem
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
@@ -46,6 +47,8 @@ class CarbRepositoryTest {
         applicationScope = CoroutineScope(UnconfinedTestDispatcher())
 
         every { context.filesDir } returns File(System.getProperty("java.io.tmpdir")!!)
+        mockkObject(ImageProcessor)
+        every { ImageProcessor.processForUpload(any(), any(), any()) } returns byteArrayOf(1, 2, 3)
         repository = CarbRepository(context, carbApiService, carbApiCapture, carbLogDao, submissionLogRepository, moshi, applicationScope)
     }
 
