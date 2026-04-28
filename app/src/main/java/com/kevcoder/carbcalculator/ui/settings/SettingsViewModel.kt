@@ -13,6 +13,7 @@ import com.kevcoder.carbcalculator.workers.SubmissionPurgeWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -44,6 +45,10 @@ class SettingsViewModel @Inject constructor(
     /** Fires once each time a config change is saved successfully */
     private val _saveSuccessEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val saveSuccessEvent: SharedFlow<Unit> = _saveSuccessEvent.asSharedFlow()
+
+    /** Emits success message on export or import */
+    private val _backupEvent = MutableSharedFlow<BackupEvent>(extraBufferCapacity = 1)
+    val backupEvent: SharedFlow<BackupEvent> = _backupEvent.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -139,7 +144,37 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun onExportBackup() {
+        viewModelScope.launch {
+            val result = settingsRepository.exportBackup()
+            result.onSuccess { file ->
+                _backupEvent.emit(BackupEvent.ExportSuccess(file.absolutePath))
+            }
+            result.onFailure { e ->
+                _backupEvent.emit(BackupEvent.Error(e.message ?: "Export failed"))
+            }
+        }
+    }
+
+    fun onImportBackup(file: File) {
+        viewModelScope.launch {
+            val result = settingsRepository.importBackup(file)
+            result.onSuccess { message ->
+                _backupEvent.emit(BackupEvent.ImportSuccess(message))
+            }
+            result.onFailure { e ->
+                _backupEvent.emit(BackupEvent.Error(e.message ?: "Import failed"))
+            }
+        }
+    }
+
     companion object {
         private const val PURGE_WORK_NAME = "submission_purge"
     }
+}
+
+sealed class BackupEvent {
+    data class ExportSuccess(val filePath: String) : BackupEvent()
+    data class ImportSuccess(val message: String) : BackupEvent()
+    data class Error(val message: String) : BackupEvent()
 }
