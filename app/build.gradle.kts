@@ -151,6 +151,7 @@ dependencies {
 
     // Image loading
     implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
 
     // Testing
     testImplementation(libs.junit)
