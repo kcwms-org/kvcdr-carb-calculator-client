@@ -60,7 +60,6 @@ android {
     buildTypes {
         debug {
             isDebuggable = true
-            applicationIdSuffix = ".debug"
 
             val keystorePath = System.getenv("CI_KEYSTORE_PATH")
             if (keystorePath != null) {

@@ -1,31 +1,42 @@
 # Issue #33 — Data loss on app update
 
-**Status:** Done — resolved by #24 fix
+**Status:** Implementing fix
 
 ## Summary
 
-User reported data loss on app update. Root cause: issue #24 (signing key mismatch causing uninstall/reinstall on each CI build). When the app is uninstalled and reinstalled, all local data is wiped by the OS.
+User reports data persists across updates even after issue #24 was fixed. Root cause: debug builds have `applicationIdSuffix = ".debug"`, making them a completely separate app (`com.kevcoder.carbcalculator.debug` vs `com.kevcoder.carbcalculator`). Android treats these as different apps with separate data directories.
 
-## Context
+## Root Cause
 
-This is a **duplicate** of issue #24. The data loss is a symptom, not a primary bug:
+In `app/build.gradle.kts` (line 63):
+```kotlin
+debug {
+    isDebuggable = true
+    applicationIdSuffix = ".debug"  // ← Makes debug APK a separate app
+    ...
+}
+```
 
-1. **Issue #24 root cause:** Each GitHub Actions run generated a new debug keystore, causing Android to reject updates with "package conflicts with an existing package."
-2. **Effect:** App was force-uninstalled and reinstalled, wiping all local data (Room database, DataStore, etc.)
-3. **Fix (PR #27):** Stable keystore stored as GitHub secret, auto-increment versionCode using `github.run_number`.
+Result:
+- CI builds APK as `com.kevcoder.carbcalculator.debug`
+- User's previous version may have been `com.kevcoder.carbcalculator` or vice versa
+- Android sees them as unrelated packages; data doesn't migrate between them
 
-With #24 fixed, updates are now signed consistently, allowing in-place upgrades. Room database survives across updates as designed.
+## Solution
 
-## Why This Is Resolved
+Remove the `applicationIdSuffix` for CI builds. CI APKs will use the standard package name `com.kevcoder.carbcalculator`, allowing data to persist across updates.
 
-PR #27 (`fix: stable CI keystore and auto-increment versionCode (issue #24) (#27)`):
-- Generates stable keystore once, stores as GitHub secret
-- Decodes keystore in CI before building
-- Auto-increments `versionCode` using `github.run_number`
-- Allows Android to accept updates as in-place upgrades instead of forcing uninstall/reinstall
+**Rationale:**
+- CI builds are for QA/testing, not local development
+- QA should test the same package name that will ship
+- For local dev, developers can still use unmodified debug APKs or adjust their build config locally
 
-With consistent signing, the OS no longer wipes app data on update. Room database persists as designed.
+## Implementation
 
-## Verification
+Remove line 63 from `app/build.gradle.kts` (or conditionally apply the suffix only for local debug builds, not CI).
 
-To confirm data persists on the next update, install current APK, add log entries, update to the next build, and verify history is intact.
+## Acceptance Criteria
+
+- [ ] CI APK uses package name `com.kevcoder.carbcalculator` (no `.debug` suffix)
+- [ ] User can install new CI APK over old one and data persists
+- [ ] Verified: install old APK → add logs → install new APK → logs still present
