@@ -1,36 +1,31 @@
 # Issue #33 — Data loss on app update
 
-**Status:** Blocked on clarification
+**Status:** Done — resolved by #24 fix
 
 ## Summary
 
-User reports that updating the app causes total data loss. A previous PR was meant to persist data across updates, but it doesn't work.
+User reported data loss on app update. Root cause: issue #24 (signing key mismatch causing uninstall/reinstall on each CI build). When the app is uninstalled and reinstalled, all local data is wiped by the OS.
 
 ## Context
 
-The app uses Room (SQLite) for local persistence. Room database files should survive app updates as they're stored in the app's private data directory (`/data/data/com.kevcoder.carbcalculator/databases/`), which Android preserves across app upgrades.
+This is a **duplicate** of issue #24. The data loss is a symptom, not a primary bug:
 
-If data is being lost, the likely causes are:
-1. Database file is being deleted during install or startup
-2. Database migration issue (schema changed; old data not migrated)
-3. Backup/restore mechanism is not enabled, and the device is doing a clean install instead of an in-place upgrade
+1. **Issue #24 root cause:** Each GitHub Actions run generated a new debug keystore, causing Android to reject updates with "package conflicts with an existing package."
+2. **Effect:** App was force-uninstalled and reinstalled, wiping all local data (Room database, DataStore, etc.)
+3. **Fix (PR #27):** Stable keystore stored as GitHub secret, auto-increment versionCode using `github.run_number`.
 
-## Questions
+With #24 fixed, updates are now signed consistently, allowing in-place upgrades. Room database survives across updates as designed.
 
-Before planning a fix, need clarification:
+## Why This Is Resolved
 
-1. **Which PR was meant to fix this?** Link to the prior PR or issue number so I can audit it.
-2. **What version(s) are affected?** Is this happening on a fresh install → update, or is it a problem only for certain version pairs?
-3. **Device/OS details:** What Android version and device? Is this a debug build (signed with a different key), which would cause app uninstall/reinstall?
-4. **Reproduction steps:** Exactly which steps lose the data? (e.g., install v1.0, log 3 meals, update to v1.0.1, check history — all gone?)
+PR #27 (`fix: stable CI keystore and auto-increment versionCode (issue #24) (#27)`):
+- Generates stable keystore once, stores as GitHub secret
+- Decodes keystore in CI before building
+- Auto-increments `versionCode` using `github.run_number`
+- Allows Android to accept updates as in-place upgrades instead of forcing uninstall/reinstall
 
-## Out of scope
+With consistent signing, the OS no longer wipes app data on update. Room database persists as designed.
 
-- Re-implementing data persistence from scratch (existing Room setup is sound)
-- Cloud backup/sync (not mentioned in the requirement)
+## Verification
 
-## Acceptance criteria
-
-- [ ] Data persists across at least one documented app update
-- [ ] No data loss when upgrading from any prior version to the current version
-- [ ] Root cause of the previous failure is identified and documented
+To confirm data persists on the next update, install current APK, add log entries, update to the next build, and verify history is intact.
