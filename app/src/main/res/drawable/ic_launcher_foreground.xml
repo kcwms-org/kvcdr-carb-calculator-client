@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Blue ring, centered in the 66dp adaptive-icon safe zone -->
+    <path
+        android:strokeColor="#1976D2"
+        android:strokeWidth="6"
+        android:fillColor="#00000000"
+        android:pathData="M 54,24 a 30,30 0 1,0 0.001,0" />
+
+    <!-- Lowercase wordmark "kvcdr" centered inside the ring.
+         Letters drawn as stroked vector paths, ~13 units tall.
+         Baseline y=61, top y=48. Total run ~38 units, starting x=35. -->
+    <group>
+        <!-- k : vertical stem + diagonal arms -->
+        <path
+            android:strokeColor="#1976D2"
+            android:strokeWidth="2.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 36,48 L 36,61 M 36,56 L 41,52 M 38.2,55 L 41,61" />
+
+        <!-- v : two diagonals meeting at the baseline -->
+        <path
+            android:strokeColor="#1976D2"
+            android:strokeWidth="2.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 44,52 L 47.5,61 L 51,52" />
+
+        <!-- c : open arc on the right -->
+        <path
+            android:strokeColor="#1976D2"
+            android:strokeWidth="2.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 59,53.5 a 4.5,4.5 0 1,0 0,6" />
+
+        <!-- d : circle with vertical stem on right -->
+        <path
+            android:strokeColor="#1976D2"
+            android:strokeWidth="2.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 67,52 a 4.5,4.5 0 1,0 0,9 a 4.5,4.5 0 1,0 0,-9 M 67,48 L 67,61" />
+
+        <!-- r : vertical stem with small arm at the top -->
+        <path
+            android:strokeColor="#1976D2"
+            android:strokeWidth="2.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 71,52 L 71,61 M 71,53.5 Q 73,52 75,52.5" />
+    </group>
+</vector>
