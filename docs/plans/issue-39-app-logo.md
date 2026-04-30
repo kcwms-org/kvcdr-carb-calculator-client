@@ -4,7 +4,7 @@
 
 Replace the default "blue rounded square" launcher icon with a custom logo: a generic blue ring (visually inspired by the diabetes awareness circle, but not the trademarked IDF mark) with the lowercase wordmark `kvcdr` centered inside it. Implement as an Android adaptive icon using vector drawables. Project `minSdk = 26`, so the adaptive-icon path covers every supported device — legacy PNG fallbacks are dropped.
 
-**Status:** Done — merged via PR #<number>
+**Status:** Done — merged via PR #41
 
 ## Root cause / context
 
