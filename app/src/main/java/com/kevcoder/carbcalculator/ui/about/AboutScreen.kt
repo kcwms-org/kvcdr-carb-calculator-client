@@ -27,6 +27,46 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.6.0",
+        notes = listOf(
+            "App logo: adaptive vector icon for all sizes",
+        ),
+    ),
+    ChangelogEntry(
+        version = "1.5.0",
+        notes = listOf(
+            "Import/export: backup and restore settings and history as JSON",
+        ),
+    ),
+    ChangelogEntry(
+        version = "1.4.0",
+        notes = listOf(
+            "Image compression: resize and compress photos before upload",
+            "DateTime picker: backfill submission timestamp for past meals",
+            "Full-size image viewer: tap to view full image from history",
+            "Save images to device: optional toggle to persist images to gallery",
+        ),
+    ),
+    ChangelogEntry(
+        version = "1.3.0",
+        notes = listOf(
+            "Data persistence: survive app reinstalls via Android Auto Backup",
+            "CI improvements: stable keystore and auto-incrementing version code",
+        ),
+    ),
+    ChangelogEntry(
+        version = "1.2.0",
+        notes = listOf(
+            "HTTP logging: detailed request/response logs for debugging",
+        ),
+    ),
+    ChangelogEntry(
+        version = "1.1.0",
+        notes = listOf(
+            "Keystore setup: signed APK builds for sideload updates",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.0.0",
         notes = listOf(
             "Initial release",
@@ -35,7 +75,6 @@ private val changelog = listOf(
             "History and submission log",
         ),
     ),
-    // Add future releases here, newest first.
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
