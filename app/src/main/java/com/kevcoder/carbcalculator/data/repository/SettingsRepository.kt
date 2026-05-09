@@ -99,9 +99,8 @@ class SettingsRepository @Inject constructor(
             val backup = AppBackup(settings = settings, carbLogs = logs)
             val json = moshi.adapter(AppBackup::class.java).toJson(backup)
 
-            val backupFile = getOrCreateExportDirectory().let { baseDir ->
-                File(baseDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
-            }
+            val exportDir = getOrCreateExportDirectory()
+            val backupFile = File(exportDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
             backupFile.writeText(json)
 
             Result.success(backupFile)
@@ -110,14 +109,14 @@ class SettingsRepository @Inject constructor(
         }
     }
 
-    private fun getOrCreateExportDirectory(): File {
+    private suspend fun getOrCreateExportDirectory(): File {
         val uriString = dataStore.exportDirectoryUri.first()
         return if (!uriString.isNullOrEmpty()) {
             try {
                 val uri = Uri.parse(uriString)
                 val docFile = DocumentFile.fromTreeUri(context, uri)
                 if (docFile != null && docFile.exists()) {
-                    File(uri.path ?: context.getExternalFilesDir(null)?.absolutePath!!)
+                    File(uri.path ?: context.getExternalFilesDir(null)?.absolutePath ?: context.cacheDir.absolutePath)
                 } else {
                     context.getExternalFilesDir(null) ?: context.cacheDir
                 }

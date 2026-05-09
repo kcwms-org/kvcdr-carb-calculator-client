@@ -363,9 +363,10 @@ fun SettingsScreen(
                 // --- Export Directory ---
                 Text("Export Directory", style = MaterialTheme.typography.labelMedium)
                 if (uiState.exportDirectoryUri != null) {
+                    val dirName = uiState.exportDirectoryUri!!.substring(uiState.exportDirectoryUri!!.lastIndexOf('/') + 1)
                     ListItem(
                         headlineContent = { Text("Custom location selected") },
-                        supportingContent = { Text(uiState.exportDirectoryUri.substring(uiState.exportDirectoryUri.lastIndexOf('/') + 1)) },
+                        supportingContent = { Text(dirName) },
                         trailingContent = {
                             Button(
                                 onClick = { viewModel.onClearExportDirectory() },
