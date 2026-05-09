@@ -2,6 +2,8 @@
 
 **GitHub Issue:** [#11](https://github.com/kcwms-org/kvcdr-carb-calculator-client/issues/11)
 
+**Status:** Closed — implemented backend-side in `kvcdr-carb-calculator`; no client work required
+
 ## Context
 
 Currently `AnalysisResultCache` is a trivial single-item in-memory handoff between `CaptureViewModel` and `ResultViewModel` — it has no key logic, no persistence, and is cleared after each ResultScreen visit. Every submission hits the backend AI engine, even when the user re-submits functionally identical food descriptions or re-photographs the same meal.
