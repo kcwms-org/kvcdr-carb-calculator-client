@@ -1,5 +1,7 @@
 # Issue #17 — Data persistence across app installs/updates
 
+**Status:** Done — merged via PR #18
+
 Data is lost on uninstall because the Room database lives in internal app storage (`data/data/<pkg>/databases/`), which Android wipes on uninstall. `allowBackup="true"` is already set in the manifest but no backup rules are configured, so the database is not actually included in Auto Backup.
 
 The issue requests two strategies:

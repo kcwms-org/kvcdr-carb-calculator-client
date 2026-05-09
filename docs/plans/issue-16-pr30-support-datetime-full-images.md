@@ -143,5 +143,5 @@
 - Consider adding image zoom capability in full-screen viewer
 - Datetime picker should use Material3 DatePickerDialog + TimePickerDialog
 
-**Status:** Ready for implementation
+**Status:** Done — merged via PR #16
 

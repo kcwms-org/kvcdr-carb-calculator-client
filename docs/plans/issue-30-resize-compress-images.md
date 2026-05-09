@@ -1,5 +1,7 @@
 # Issue #30 — Resize and compress camera images before uploading to /analyze
 
+**Status:** Done — merged via PR #32
+
 ## Summary
 
 The carb-calculator backend is dropping its server-side presigned upload flow (kcwms-org/kvcdr-carb-calculator#35). Going forward, `POST /analyze` only accepts an inline multipart `image` field, and DigitalOcean App Platform caps the request body at ~1 MB. The Android client must resize and recompress camera photos to stay well under that cap (target 200–500 KB) while preserving enough fidelity for Claude vision to estimate carbs accurately.
