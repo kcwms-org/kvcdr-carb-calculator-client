@@ -66,4 +66,23 @@ class AppPreferencesDataStoreTest {
         val result = dataStore.dexcomEnv.first()
         assertEquals(AppPreferencesDataStore.DEXCOM_ENV_PRODUCTION, result)
     }
+
+    @Test
+    fun exportDirectoryUri_defaultsToNull() = runTest(testDispatcher) {
+        assertNull(dataStore.exportDirectoryUri.first())
+    }
+
+    @Test
+    fun saveExportDirectoryUri_persistsAndReadsBack() = runTest(testDispatcher) {
+        val uri = "content://com.android.externalstorage.documents/tree/primary%3ADownload"
+        dataStore.saveExportDirectoryUri(uri)
+        assertEquals(uri, dataStore.exportDirectoryUri.first())
+    }
+
+    @Test
+    fun clearExportDirectoryUri_removesValue() = runTest(testDispatcher) {
+        dataStore.saveExportDirectoryUri("content://com.example/tree/downloads")
+        dataStore.clearExportDirectoryUri()
+        assertNull(dataStore.exportDirectoryUri.first())
+    }
 }

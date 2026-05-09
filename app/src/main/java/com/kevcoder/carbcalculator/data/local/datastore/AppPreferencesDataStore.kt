@@ -27,6 +27,7 @@ class AppPreferencesDataStore @Inject constructor(
         val IMAGE_QUALITY = intPreferencesKey("image_quality")
         val SAVE_IMAGES_TO_DEVICE = booleanPreferencesKey("save_images_to_device")
         val EXPAND_SUBMISSIONS_DEFAULT = booleanPreferencesKey("expand_submissions_default")
+        val EXPORT_DIRECTORY_URI = stringPreferencesKey("export_directory_uri")
 
         const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
@@ -66,6 +67,10 @@ class AppPreferencesDataStore @Inject constructor(
         prefs[EXPAND_SUBMISSIONS_DEFAULT] ?: false
     }
 
+    val exportDirectoryUri: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[EXPORT_DIRECTORY_URI]
+    }
+
     suspend fun saveCarbApiUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[CARB_API_URL] = url }
     }
@@ -88,5 +93,13 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun saveExpandSubmissionsDefault(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[EXPAND_SUBMISSIONS_DEFAULT] = value }
+    }
+
+    suspend fun saveExportDirectoryUri(uri: String) {
+        context.dataStore.edit { prefs -> prefs[EXPORT_DIRECTORY_URI] = uri }
+    }
+
+    suspend fun clearExportDirectoryUri() {
+        context.dataStore.edit { prefs -> prefs.remove(EXPORT_DIRECTORY_URI) }
     }
 }

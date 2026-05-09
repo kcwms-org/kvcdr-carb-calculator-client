@@ -42,6 +42,7 @@ class SettingsViewModelTest {
         tokenManager = mockk()
         workManager = mockk(relaxed = true)
         every { settingsRepository.getSettings() } returns flowOf(defaultSettings)
+        every { settingsRepository.getExportDirectoryUri() } returns flowOf(null)
         every { tokenManager.isConnected() } returns false
         viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager, workManager)
     }
@@ -106,5 +107,35 @@ class SettingsViewModelTest {
     fun `onDexcomConnected updates connected state to true`() {
         viewModel.onDexcomConnected()
         assertTrue(viewModel.uiState.value.isDexcomConnected)
+    }
+
+    @Test
+    fun `exportDirectoryUri is null initially`() = runTest {
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.exportDirectoryUri)
+    }
+
+    @Test
+    fun `exportDirectoryUri reflects stored value`() = runTest {
+        every { settingsRepository.getExportDirectoryUri() } returns flowOf("content://com.example/tree/downloads")
+        viewModel = SettingsViewModel(settingsRepository, dexcomRepository, tokenManager, workManager)
+        advanceUntilIdle()
+        assertEquals("content://com.example/tree/downloads", viewModel.uiState.value.exportDirectoryUri)
+    }
+
+    @Test
+    fun `onExportDirectorySelected delegates to repository`() = runTest {
+        coEvery { settingsRepository.saveExportDirectoryUri(any()) } just Runs
+        viewModel.onExportDirectorySelected("content://com.example/tree/downloads")
+        advanceUntilIdle()
+        coVerify { settingsRepository.saveExportDirectoryUri("content://com.example/tree/downloads") }
+    }
+
+    @Test
+    fun `onClearExportDirectory delegates to repository`() = runTest {
+        coEvery { settingsRepository.clearExportDirectoryUri() } just Runs
+        viewModel.onClearExportDirectory()
+        advanceUntilIdle()
+        coVerify { settingsRepository.clearExportDirectoryUri() }
     }
 }

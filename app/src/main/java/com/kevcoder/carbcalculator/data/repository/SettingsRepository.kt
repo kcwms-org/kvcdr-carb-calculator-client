@@ -1,6 +1,8 @@
 package com.kevcoder.carbcalculator.data.repository
 
 import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
@@ -62,9 +64,15 @@ class SettingsRepository @Inject constructor(
 
     suspend fun saveExpandSubmissionsDefault(value: Boolean) = dataStore.saveExpandSubmissionsDefault(value)
 
+    suspend fun saveExportDirectoryUri(uri: String) = dataStore.saveExportDirectoryUri(uri)
+
+    suspend fun clearExportDirectoryUri() = dataStore.clearExportDirectoryUri()
+
+    fun getExportDirectoryUri(): Flow<String?> = dataStore.exportDirectoryUri
+
     fun getImageQuality(): Flow<Int> = dataStore.imageQuality
 
-    suspend fun exportBackup(): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun exportBackup(): Result<String> = withContext(Dispatchers.IO) {
         try {
             val settings = SettingsSnapshot(
                 carbApiUrl = dataStore.carbApiUrl.first(),
@@ -90,16 +98,41 @@ class SettingsRepository @Inject constructor(
 
             val backup = AppBackup(settings = settings, carbLogs = logs)
             val json = moshi.adapter(AppBackup::class.java).toJson(backup)
+            val fileName = "carb-calculator-backup-${System.currentTimeMillis()}.json"
 
-            val downloadsDir = File(context.getExternalFilesDir(null), "Downloads")
-            downloadsDir.mkdirs()
-            val backupFile = File(downloadsDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
-            backupFile.writeText(json)
+            val uriString = dataStore.exportDirectoryUri.first()
+            val savedPath = if (!uriString.isNullOrEmpty()) {
+                writeToTreeUri(Uri.parse(uriString), fileName, json)
+                    ?: writeToDefaultDir(fileName, json)
+            } else {
+                writeToDefaultDir(fileName, json)
+            }
 
-            Result.success(backupFile)
+            Result.success(savedPath)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun writeToTreeUri(treeUri: Uri, fileName: String, content: String): String? {
+        return try {
+            val docDir = DocumentFile.fromTreeUri(context, treeUri) ?: return null
+            if (!docDir.exists() || !docDir.canWrite()) return null
+            val newDoc = docDir.createFile("application/json", fileName) ?: return null
+            context.contentResolver.openOutputStream(newDoc.uri)?.use { out ->
+                out.write(content.toByteArray())
+            }
+            newDoc.uri.toString()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun writeToDefaultDir(fileName: String, content: String): String {
+        val dir = context.getExternalFilesDir(null) ?: context.cacheDir
+        val file = File(dir, fileName)
+        file.writeText(content)
+        return file.absolutePath
     }
 
     suspend fun importBackup(file: File): Result<String> = withContext(Dispatchers.IO) {
