@@ -1,5 +1,7 @@
 # Issue #45 — Configurable Import/Export Path
 
+**Status:** Done — merged via PR #47
+
 **GitHub Issue:** [#45](https://github.com/kcwms-org/kvcdr-carb-calculator-client/issues/45)
 
 ## Summary
