@@ -155,6 +155,15 @@ fun SettingsScreen(
     var apiUrlDraft by remember(uiState.carbApiUrl) { mutableStateOf(uiState.carbApiUrl) }
     var showStarShower by remember { mutableStateOf(false) }
 
+    val directoryPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            viewModel.onExportDirectorySelected(it.toString())
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.authUrlEvent.collect { url ->
             CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
@@ -344,10 +353,44 @@ fun SettingsScreen(
                 // --- Backup & Restore ---
                 Text("Backup & Restore", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Export settings and history to a JSON file in Downloads, or import from a previously exported file.",
+                    "Export settings and history to a JSON file, or import from a previously exported file.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                HorizontalDivider()
+
+                // --- Export Directory ---
+                Text("Export Directory", style = MaterialTheme.typography.labelMedium)
+                if (uiState.exportDirectoryUri != null) {
+                    ListItem(
+                        headlineContent = { Text("Custom location selected") },
+                        supportingContent = { Text(uiState.exportDirectoryUri.substring(uiState.exportDirectoryUri.lastIndexOf('/') + 1)) },
+                        trailingContent = {
+                            Button(
+                                onClick = { viewModel.onClearExportDirectory() },
+                                modifier = Modifier.padding(8.dp),
+                            ) {
+                                Text("Clear")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    Text(
+                        "Default: App files directory",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Button(
+                    onClick = { directoryPickerLauncher.launch(null) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Choose Directory")
+                }
+
+                HorizontalDivider()
 
                 val context = LocalContext.current
                 val importLauncher = rememberLauncherForActivityResult(

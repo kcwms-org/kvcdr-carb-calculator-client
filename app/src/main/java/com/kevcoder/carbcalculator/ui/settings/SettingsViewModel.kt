@@ -25,6 +25,7 @@ data class SettingsUiState(
     val imageQuality: Int = AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY,
     val saveImagesToDevice: Boolean = false,
     val expandSubmissionsDefault: Boolean = false,
+    val exportDirectoryUri: String? = null,
 )
 
 @HiltViewModel
@@ -62,6 +63,12 @@ class SettingsViewModel @Inject constructor(
                     saveImagesToDevice = settings.saveImagesToDevice,
                     expandSubmissionsDefault = settings.expandSubmissionsDefault,
                 )
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getExportDirectoryUri().collect { uri ->
+                _uiState.value = _uiState.value.copy(exportDirectoryUri = uri)
             }
         }
     }
@@ -165,6 +172,18 @@ class SettingsViewModel @Inject constructor(
             result.onFailure { e ->
                 _backupEvent.emit(BackupEvent.Error(e.message ?: "Import failed"))
             }
+        }
+    }
+
+    fun onExportDirectorySelected(uri: String) {
+        viewModelScope.launch {
+            settingsRepository.saveExportDirectoryUri(uri)
+        }
+    }
+
+    fun onClearExportDirectory() {
+        viewModelScope.launch {
+            settingsRepository.clearExportDirectoryUri()
         }
     }
 

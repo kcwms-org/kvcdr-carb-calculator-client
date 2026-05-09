@@ -1,6 +1,8 @@
 package com.kevcoder.carbcalculator.data.repository
 
 import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
@@ -62,6 +64,12 @@ class SettingsRepository @Inject constructor(
 
     suspend fun saveExpandSubmissionsDefault(value: Boolean) = dataStore.saveExpandSubmissionsDefault(value)
 
+    suspend fun saveExportDirectoryUri(uri: String) = dataStore.saveExportDirectoryUri(uri)
+
+    suspend fun clearExportDirectoryUri() = dataStore.clearExportDirectoryUri()
+
+    fun getExportDirectoryUri(): Flow<String?> = dataStore.exportDirectoryUri
+
     fun getImageQuality(): Flow<Int> = dataStore.imageQuality
 
     suspend fun exportBackup(): Result<File> = withContext(Dispatchers.IO) {
@@ -91,14 +99,33 @@ class SettingsRepository @Inject constructor(
             val backup = AppBackup(settings = settings, carbLogs = logs)
             val json = moshi.adapter(AppBackup::class.java).toJson(backup)
 
-            val downloadsDir = File(context.getExternalFilesDir(null), "Downloads")
-            downloadsDir.mkdirs()
-            val backupFile = File(downloadsDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
+            val backupFile = getOrCreateExportDirectory().let { baseDir ->
+                File(baseDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
+            }
             backupFile.writeText(json)
 
             Result.success(backupFile)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun getOrCreateExportDirectory(): File {
+        val uriString = dataStore.exportDirectoryUri.first()
+        return if (!uriString.isNullOrEmpty()) {
+            try {
+                val uri = Uri.parse(uriString)
+                val docFile = DocumentFile.fromTreeUri(context, uri)
+                if (docFile != null && docFile.exists()) {
+                    File(uri.path ?: context.getExternalFilesDir(null)?.absolutePath!!)
+                } else {
+                    context.getExternalFilesDir(null) ?: context.cacheDir
+                }
+            } catch (e: Exception) {
+                context.getExternalFilesDir(null) ?: context.cacheDir
+            }
+        } else {
+            context.getExternalFilesDir(null) ?: context.cacheDir
         }
     }
 
