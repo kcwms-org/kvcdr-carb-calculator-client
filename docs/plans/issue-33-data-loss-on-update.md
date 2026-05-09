@@ -1,6 +1,6 @@
 # Issue #33 — Data loss on app update
 
-**Status:** Implementing fix
+**Status:** Done — merged via PR #34
 
 ## Summary
 

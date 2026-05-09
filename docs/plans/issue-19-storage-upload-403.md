@@ -1,6 +1,6 @@
 # Issue #19 — Storage Upload Failed: HTTP 403
 
-**Status:** Open
+**Status:** Closed — superseded by issue #30 which removed the presign/PUT flow entirely
 
 ## Context
 
