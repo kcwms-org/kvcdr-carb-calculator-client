@@ -152,6 +152,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.exifinterface)
 
+    // DocumentFile (for SAF directory access)
+    implementation(libs.androidx.documentfile)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

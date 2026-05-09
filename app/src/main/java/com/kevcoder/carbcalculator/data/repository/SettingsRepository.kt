@@ -72,7 +72,7 @@ class SettingsRepository @Inject constructor(
 
     fun getImageQuality(): Flow<Int> = dataStore.imageQuality
 
-    suspend fun exportBackup(): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun exportBackup(): Result<String> = withContext(Dispatchers.IO) {
         try {
             val settings = SettingsSnapshot(
                 carbApiUrl = dataStore.carbApiUrl.first(),
@@ -98,34 +98,41 @@ class SettingsRepository @Inject constructor(
 
             val backup = AppBackup(settings = settings, carbLogs = logs)
             val json = moshi.adapter(AppBackup::class.java).toJson(backup)
+            val fileName = "carb-calculator-backup-${System.currentTimeMillis()}.json"
 
-            val exportDir = getOrCreateExportDirectory()
-            val backupFile = File(exportDir, "carb-calculator-backup-${System.currentTimeMillis()}.json")
-            backupFile.writeText(json)
+            val uriString = dataStore.exportDirectoryUri.first()
+            val savedPath = if (!uriString.isNullOrEmpty()) {
+                writeToTreeUri(Uri.parse(uriString), fileName, json)
+                    ?: writeToDefaultDir(fileName, json)
+            } else {
+                writeToDefaultDir(fileName, json)
+            }
 
-            Result.success(backupFile)
+            Result.success(savedPath)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    private suspend fun getOrCreateExportDirectory(): File {
-        val uriString = dataStore.exportDirectoryUri.first()
-        return if (!uriString.isNullOrEmpty()) {
-            try {
-                val uri = Uri.parse(uriString)
-                val docFile = DocumentFile.fromTreeUri(context, uri)
-                if (docFile != null && docFile.exists()) {
-                    File(uri.path ?: context.getExternalFilesDir(null)?.absolutePath ?: context.cacheDir.absolutePath)
-                } else {
-                    context.getExternalFilesDir(null) ?: context.cacheDir
-                }
-            } catch (e: Exception) {
-                context.getExternalFilesDir(null) ?: context.cacheDir
+    private fun writeToTreeUri(treeUri: Uri, fileName: String, content: String): String? {
+        return try {
+            val docDir = DocumentFile.fromTreeUri(context, treeUri) ?: return null
+            if (!docDir.exists() || !docDir.canWrite()) return null
+            val newDoc = docDir.createFile("application/json", fileName) ?: return null
+            context.contentResolver.openOutputStream(newDoc.uri)?.use { out ->
+                out.write(content.toByteArray())
             }
-        } else {
-            context.getExternalFilesDir(null) ?: context.cacheDir
+            newDoc.uri.toString()
+        } catch (e: Exception) {
+            null
         }
+    }
+
+    private fun writeToDefaultDir(fileName: String, content: String): String {
+        val dir = context.getExternalFilesDir(null) ?: context.cacheDir
+        val file = File(dir, fileName)
+        file.writeText(content)
+        return file.absolutePath
     }
 
     suspend fun importBackup(file: File): Result<String> = withContext(Dispatchers.IO) {

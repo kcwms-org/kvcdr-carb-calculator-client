@@ -154,8 +154,8 @@ class SettingsViewModel @Inject constructor(
     fun onExportBackup() {
         viewModelScope.launch {
             val result = settingsRepository.exportBackup()
-            result.onSuccess { file ->
-                _backupEvent.emit(BackupEvent.ExportSuccess(file.absolutePath))
+            result.onSuccess { path ->
+                _backupEvent.emit(BackupEvent.ExportSuccess(path))
             }
             result.onFailure { e ->
                 _backupEvent.emit(BackupEvent.Error(e.message ?: "Export failed"))
