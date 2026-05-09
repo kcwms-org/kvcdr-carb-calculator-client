@@ -27,6 +27,12 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.7.0",
+        notes = listOf(
+            "Configurable export directory: choose where to save backups",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.6.0",
         notes = listOf(
             "App logo: adaptive vector icon for all sizes",
