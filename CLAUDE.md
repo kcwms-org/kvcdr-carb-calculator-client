@@ -79,3 +79,7 @@ docker compose run --rm build bash
 - `AnalysisResultCache` (@Singleton) passes `AnalysisResult` from `CaptureViewModel` → `ResultViewModel` without nav argument serialization
 - Room `CarbLogEntity.foodItemsJson` stores food items as JSON string (Moshi-serialized)
 - Photo thumbnails saved to `filesDir/thumbnails/<timestamp>.jpg` on log save; temp capture files written to `cacheDir`
+
+## Changelog Maintenance
+
+When creating a PR that merges a feature or fix, update `AboutScreen.kt` with a new version entry summarizing the changes. Add the entry to the top of the `changelog` list (newest first). Use semantic versioning (patch/minor/major) and list 1–3 key changes per version.
