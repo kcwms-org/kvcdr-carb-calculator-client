@@ -86,8 +86,9 @@ When creating a PR that merges a feature or fix, update `AboutScreen.kt` with a 
 
 ## Git Configuration
 
-Configure the per-repo git email as `dev.ai@workslave.<machine-name>`, where `<machine-name>` is the hostname of the development machine:
+Configure the per-repo git author identity. Set `user.name` to `dev.ai@<machine-name>` and `user.email` to `dev.ai@workslave.<machine-name>`, where `<machine-name>` is the hostname of the development machine:
 
 ```bash
+git config user.name "dev.ai@<machine-name>"
 git config user.email "dev.ai@workslave.<machine-name>"
 ```
