@@ -83,3 +83,11 @@ docker compose run --rm build bash
 ## Changelog Maintenance
 
 When creating a PR that merges a feature or fix, update `AboutScreen.kt` with a new version entry summarizing the changes. Add the entry to the top of the `changelog` list (newest first). Use semantic versioning (patch/minor/major) and list 1–3 key changes per version.
+
+## Git Configuration
+
+Configure the per-repo git email as `dev.ai@workslave.<machine-name>`, where `<machine-name>` is the hostname of the development machine:
+
+```bash
+git config user.email "dev.ai@workslave.<machine-name>"
+```
