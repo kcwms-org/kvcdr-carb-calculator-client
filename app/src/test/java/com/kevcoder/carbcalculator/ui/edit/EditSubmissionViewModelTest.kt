@@ -199,6 +199,7 @@ class EditSubmissionViewModelTest {
     @Test
     fun `onResubmit sets error state on API failure`() = runTest {
         coEvery { carbRepository.analyzeFood(any(), any(), any(), any()) } throws RuntimeException("Network error")
+        coEvery { submissionLogRepository.logRequest(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         viewModel = createViewModel()
         viewModel.onResubmit {}
