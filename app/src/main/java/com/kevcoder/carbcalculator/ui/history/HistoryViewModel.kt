@@ -3,6 +3,7 @@ package com.kevcoder.carbcalculator.ui.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.EditLogCache
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.CarbLog
@@ -37,6 +38,7 @@ class HistoryViewModel @Inject constructor(
     private val carbRepository: CarbRepository,
     private val submissionLogRepository: SubmissionLogRepository,
     private val settingsRepository: SettingsRepository,
+    private val editLogCache: EditLogCache,
 ) : ViewModel() {
 
     // Get successful CarbLogs
@@ -105,5 +107,9 @@ class HistoryViewModel @Inject constructor(
 
     fun onImageViewerDismiss() {
         _viewingImageLog.value = null
+    }
+
+    fun onEditLog(log: CarbLog) {
+        editLogCache.put(originalLogId = log.id, log = log)
     }
 }

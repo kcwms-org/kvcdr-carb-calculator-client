@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
@@ -42,6 +43,7 @@ import androidx.compose.foundation.Image
 @Composable
 fun HistoryScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToEdit: () -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val historyItems by viewModel.historyItems.collectAsState()
@@ -94,6 +96,10 @@ fun HistoryScreen(
                                 onToggleExpand = { viewModel.toggleExpand("carb-${item.carbLog.id}") },
                                 onDelete = { viewModel.deleteSuccessfulLog(item.carbLog.id) },
                                 onImageClick = { viewModel.onImageClick(item.carbLog) },
+                                onEdit = {
+                                    viewModel.onEditLog(item.carbLog)
+                                    onNavigateToEdit()
+                                },
                             )
                         }
                         is HistoryItem.ErrorLog -> {
@@ -250,6 +256,7 @@ private fun CarbLogCard(
     onToggleExpand: () -> Unit,
     onDelete: () -> Unit,
     onImageClick: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
 
@@ -316,6 +323,13 @@ private fun CarbLogCard(
                     )
                 }
 
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
