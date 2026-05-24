@@ -1,5 +1,7 @@
 # Issue #49 — User should be able to edit results before and after saving
 
+**Status:** Done — merged via PR #50
+
 ## Summary
 
 Users need the ability to edit carb analysis results. Currently, once analysis is performed (on ResultScreen) or a log is saved (in HistoryScreen), the data is immutable. The feature should allow users to click an edit button that takes them back to a submission form with all data pre-filled, so they can modify food items/carbs and re-submit. The original request/log should be deleted when re-submitting.
