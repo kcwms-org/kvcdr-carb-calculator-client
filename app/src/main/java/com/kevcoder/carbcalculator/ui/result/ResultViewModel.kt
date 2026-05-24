@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.kevcoder.carbcalculator.data.repository.AnalysisResultCache
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
+import com.kevcoder.carbcalculator.data.repository.EditLogCache
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.AnalysisResult
+import com.kevcoder.carbcalculator.domain.model.CarbLog
 import com.kevcoder.carbcalculator.domain.model.GlucoseReading
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -30,6 +32,7 @@ data class ResultUiState(
 @HiltViewModel
 class ResultViewModel @Inject constructor(
     private val resultCache: AnalysisResultCache,
+    private val editLogCache: EditLogCache,
     private val carbRepository: CarbRepository,
     private val submissionLogRepository: SubmissionLogRepository,
     private val dexcomRepository: DexcomRepository,
@@ -117,6 +120,22 @@ class ResultViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun onEdit(onNavigateToEdit: () -> Unit) {
+        val result = _uiState.value.result ?: return
+        val log = CarbLog(
+            id = 0,
+            timestamp = System.currentTimeMillis(),
+            foodDescription = result.foodDescription,
+            items = result.items,
+            totalCarbs = result.totalCarbs,
+            thumbnailPath = result.imagePath,
+            glucose = _uiState.value.glucose,
+            imageData = result.imageData,
+        )
+        editLogCache.put(originalLogId = null, log = log)
+        onNavigateToEdit()
     }
 
     fun onDiscard(onDiscard: () -> Unit) {

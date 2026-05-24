@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 fun ResultScreen(
     onSaved: () -> Unit,
     onDiscard: () -> Unit,
+    onNavigateToEdit: () -> Unit = {},
     viewModel: ResultViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -34,6 +36,11 @@ fun ResultScreen(
                 navigationIcon = {
                     IconButton(onClick = { viewModel.onDiscard(onDiscard) }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.onEdit(onNavigateToEdit) }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit result")
                     }
                 },
             )

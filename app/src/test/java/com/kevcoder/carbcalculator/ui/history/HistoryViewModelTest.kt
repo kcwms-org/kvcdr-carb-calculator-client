@@ -1,6 +1,7 @@
 package com.kevcoder.carbcalculator.ui.history
 
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
+import com.kevcoder.carbcalculator.data.repository.EditLogCache
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
 import com.kevcoder.carbcalculator.data.repository.SubmissionLogRepository
 import com.kevcoder.carbcalculator.domain.model.CarbLog
@@ -27,6 +28,7 @@ class HistoryViewModelTest {
     private lateinit var carbRepository: CarbRepository
     private lateinit var submissionLogRepository: SubmissionLogRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var editLogCache: EditLogCache
     private lateinit var viewModel: HistoryViewModel
 
     private val fakeLogs = listOf(
@@ -56,10 +58,11 @@ class HistoryViewModelTest {
         carbRepository = mockk()
         submissionLogRepository = mockk()
         settingsRepository = mockk(relaxed = true)
+        editLogCache = mockk(relaxed = true)
         every { carbRepository.getLogs() } returns flowOf(fakeLogs)
         every { submissionLogRepository.getOrphanedErrorLogs() } returns flowOf(emptyList())
         every { submissionLogRepository.getByParentId(any()) } returns flowOf(emptyList())
-        viewModel = HistoryViewModel(carbRepository, submissionLogRepository, settingsRepository)
+        viewModel = HistoryViewModel(carbRepository, submissionLogRepository, settingsRepository, editLogCache)
     }
 
     @After

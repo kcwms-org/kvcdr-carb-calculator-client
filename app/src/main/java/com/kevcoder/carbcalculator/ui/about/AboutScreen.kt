@@ -27,6 +27,12 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.8.0",
+        notes = listOf(
+            "Edit results: adjust food items and carb values, then save edits or re-analyze with the API",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.7.0",
         notes = listOf(
             "Configurable export directory: choose where to save backups",

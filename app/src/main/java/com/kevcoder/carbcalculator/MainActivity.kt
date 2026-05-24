@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.kevcoder.carbcalculator.data.repository.DexcomRepository
 import com.kevcoder.carbcalculator.ui.capture.CaptureScreen
+import com.kevcoder.carbcalculator.ui.edit.EditSubmissionScreen
 import com.kevcoder.carbcalculator.ui.history.HistoryScreen
 import com.kevcoder.carbcalculator.ui.result.ResultScreen
 import com.kevcoder.carbcalculator.ui.settings.SettingsScreen
@@ -24,6 +25,7 @@ import javax.inject.Inject
 object Routes {
     const val CAPTURE = "capture"
     const val RESULT = "result"
+    const val EDIT_SUBMISSION = "editSubmission"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
     const val ABOUT = "about"
@@ -64,12 +66,21 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onDiscard = { navController.popBackStack() },
+                            onNavigateToEdit = { navController.navigate(Routes.EDIT_SUBMISSION) },
+                        )
+                    }
+
+                    composable(Routes.EDIT_SUBMISSION) {
+                        EditSubmissionScreen(
+                            onSaved = { navController.navigate(Routes.RESULT) },
+                            onDiscard = { navController.popBackStack() },
                         )
                     }
 
                     composable(Routes.HISTORY) {
                         HistoryScreen(
                             onNavigateBack = { navController.popBackStack() },
+                            onNavigateToEdit = { navController.navigate(Routes.EDIT_SUBMISSION) },
                         )
                     }
 
