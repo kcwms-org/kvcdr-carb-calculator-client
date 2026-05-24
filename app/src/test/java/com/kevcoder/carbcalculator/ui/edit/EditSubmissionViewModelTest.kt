@@ -207,6 +207,6 @@ class EditSubmissionViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isSubmitting)
         assertEquals("Network error", state.error)
-        verify { submissionLogRepository.logRequest(carbLogId = null, any(), any(), any(), "error", any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { submissionLogRepository.logRequest(carbLogId = null, any(), any(), any(), "error", any(), any(), any(), any(), any(), any(), any()) }
     }
 }
