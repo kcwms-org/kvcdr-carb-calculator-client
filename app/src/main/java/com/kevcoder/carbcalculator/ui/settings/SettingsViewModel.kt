@@ -26,6 +26,8 @@ data class SettingsUiState(
     val saveImagesToDevice: Boolean = false,
     val expandSubmissionsDefault: Boolean = false,
     val exportDirectoryUri: String? = null,
+    /** Shown under the API URL field when the last save was rejected */
+    val apiUrlError: String? = null,
 )
 
 @HiltViewModel
@@ -75,8 +77,18 @@ class SettingsViewModel @Inject constructor(
 
     fun onSaveApiUrl(url: String) {
         viewModelScope.launch {
-            settingsRepository.saveApiUrl(url)
-            _saveSuccessEvent.emit(Unit)
+            if (settingsRepository.saveApiUrl(url)) {
+                _uiState.value = _uiState.value.copy(apiUrlError = null)
+                _saveSuccessEvent.emit(Unit)
+            } else {
+                _uiState.value = _uiState.value.copy(apiUrlError = INVALID_API_URL_MESSAGE)
+            }
+        }
+    }
+
+    fun onApiUrlEdited() {
+        if (_uiState.value.apiUrlError != null) {
+            _uiState.value = _uiState.value.copy(apiUrlError = null)
         }
     }
 
@@ -189,6 +201,7 @@ class SettingsViewModel @Inject constructor(
 
     companion object {
         private const val PURGE_WORK_NAME = "submission_purge"
+        const val INVALID_API_URL_MESSAGE = "Enter a valid http:// or https:// URL"
     }
 }
 

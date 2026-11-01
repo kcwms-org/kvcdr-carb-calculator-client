@@ -4,6 +4,7 @@ import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCaptureInterceptor
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiService
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiUrl
 import com.kevcoder.carbcalculator.data.remote.dexcom.DexcomApiService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -16,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -63,49 +63,44 @@ object NetworkModule {
     fun provideCarbOkHttpClient(
         logging: HttpLoggingInterceptor,
         captureInterceptor: CarbApiCaptureInterceptor,
-    ): OkHttpClient =
-        OkHttpClient.Builder()
+        dataStore: AppPreferencesDataStore,
+    ): OkHttpClient {
+        // Rewrites the placeholder base URL to the one configured in Settings. It runs first
+        // so the capture and logging interceptors record the URL that is actually called.
+        val dynamicUrlInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            // Requests with a full URL (e.g. the backup-import reachability check) pass through.
+            if (!CarbApiUrl.isPlaceholder(original.url)) return@Interceptor chain.proceed(original)
+            val configured = runBlocking { dataStore.carbApiUrl.first() }
+            val base = CarbApiUrl.toBaseHttpUrl(configured)
+                ?: CarbApiUrl.toBaseHttpUrl(AppPreferencesDataStore.DEFAULT_CARB_API_URL)!!
+            val newUrl = CarbApiUrl.rewrite(original.url, base)
+            chain.proceed(original.newBuilder().url(newUrl).build())
+        }
+        return OkHttpClient.Builder()
+            .addInterceptor(dynamicUrlInterceptor)
             .addInterceptor(captureInterceptor)
             .addInterceptor(logging)
             .build()
+    }
 
     /**
-     * The carb API Retrofit instance uses a dynamic base URL interceptor.
-     * The actual URL is read from DataStore at request time, so changing the URL
-     * in Settings takes effect on the very next call without recreating Retrofit.
+     * The carb API Retrofit instance uses a placeholder base URL. The carb OkHttp client
+     * rewrites it to the URL from DataStore at request time, so changing the URL in Settings
+     * takes effect on the very next call without recreating Retrofit.
      */
     @Provides
     @Singleton
     fun provideCarbApiService(
         @Named("carb") client: OkHttpClient,
         moshi: Moshi,
-        dataStore: AppPreferencesDataStore,
-    ): CarbApiService {
-        val dynamicUrlInterceptor = Interceptor { chain ->
-            val baseUrl = runBlocking { dataStore.carbApiUrl.first() }
-                .trimEnd('/') + "/"
-            val parsedBase = baseUrl.toHttpUrl()
-            val original = chain.request()
-            val newUrl = original.url.newBuilder()
-                .scheme(parsedBase.scheme)
-                .host(parsedBase.host)
-                .port(parsedBase.port)
-                .build()
-            chain.proceed(original.newBuilder().url(newUrl).build())
-        }
-
-        val dynamicClient = client.newBuilder()
-            .addInterceptor(dynamicUrlInterceptor)
-            .build()
-
-        // Placeholder base URL — the interceptor above rewrites it at runtime.
-        return Retrofit.Builder()
-            .baseUrl("http://localhost:3000/")
-            .client(dynamicClient)
+    ): CarbApiService =
+        Retrofit.Builder()
+            .baseUrl(CarbApiUrl.PLACEHOLDER_BASE_URL)
+            .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(CarbApiService::class.java)
-    }
 
     @Provides
     @Singleton

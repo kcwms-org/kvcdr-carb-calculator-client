@@ -27,6 +27,14 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.8.1",
+        notes = listOf(
+            "Fix: request log now shows the configured API URL instead of localhost",
+            "Fix: API URLs with a path prefix (e.g. https://host/api) are kept",
+            "Settings rejects invalid API URLs and trims stray spaces",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.8.0",
         notes = listOf(
             "Edit results: adjust food items and carb values, then save edits or re-analyze with the API",
