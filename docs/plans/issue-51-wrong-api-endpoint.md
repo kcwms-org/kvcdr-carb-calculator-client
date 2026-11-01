@@ -1,5 +1,7 @@
 # Issue #51 — fails to use the correct api endpoint
 
+**Status:** Done — merged via PR #53
+
 ## Summary
 
 A user configured the Carb Calculator API URL in Settings to
