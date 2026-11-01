@@ -6,6 +6,7 @@ import androidx.documentfile.provider.DocumentFile
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.local.db.CarbLogDao
 import com.kevcoder.carbcalculator.data.local.db.CarbLogEntity
+import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiUrl
 import com.kevcoder.carbcalculator.data.util.AppBackup
 import com.kevcoder.carbcalculator.data.util.CarbLogSnapshot
 import com.kevcoder.carbcalculator.data.util.SettingsSnapshot
@@ -51,7 +52,15 @@ class SettingsRepository @Inject constructor(
         )
     }
 
-    suspend fun saveApiUrl(url: String) = dataStore.saveCarbApiUrl(url)
+    /**
+     * Saves the Carb API URL after trimming whitespace and trailing slashes.
+     * Returns false (and saves nothing) if [url] is not a valid http(s) URL.
+     */
+    suspend fun saveApiUrl(url: String): Boolean {
+        val normalized = CarbApiUrl.normalize(url) ?: return false
+        dataStore.saveCarbApiUrl(normalized)
+        return true
+    }
 
     suspend fun saveDexcomEnv(env: String) = dataStore.saveDexcomEnv(env)
 
@@ -147,7 +156,7 @@ class SettingsRepository @Inject constructor(
                 return@withContext Result.failure(Exception("API URL is not reachable. Please check the URL and try again."))
             }
 
-            // Restore settings
+            // Restore settings (the URL was validated above, so this save succeeds)
             saveApiUrl(backup.settings.carbApiUrl)
             saveDexcomEnv(backup.settings.dexcomEnv)
             saveImageQuality(backup.settings.imageQuality)

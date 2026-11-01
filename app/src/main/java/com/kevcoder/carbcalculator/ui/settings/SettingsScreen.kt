@@ -201,9 +201,14 @@ fun SettingsScreen(
                 Text("Carb Calculator API", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = apiUrlDraft,
-                    onValueChange = { apiUrlDraft = it },
+                    onValueChange = {
+                        apiUrlDraft = it
+                        viewModel.onApiUrlEdited()
+                    },
                     label = { Text("API endpoint URL") },
                     placeholder = { Text(AppPreferencesDataStore.DEFAULT_CARB_API_URL) },
+                    isError = uiState.apiUrlError != null,
+                    supportingText = uiState.apiUrlError?.let { error -> { Text(error) } },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )

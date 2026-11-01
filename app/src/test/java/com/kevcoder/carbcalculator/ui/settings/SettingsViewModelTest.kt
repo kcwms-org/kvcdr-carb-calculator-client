@@ -71,10 +71,22 @@ class SettingsViewModelTest {
 
     @Test
     fun `onSaveApiUrl delegates to repository`() = runTest {
-        coEvery { settingsRepository.saveApiUrl(any()) } just Runs
+        coEvery { settingsRepository.saveApiUrl(any()) } returns true
         viewModel.onSaveApiUrl("http://localhost:3000")
         advanceUntilIdle()
         coVerify { settingsRepository.saveApiUrl("http://localhost:3000") }
+        assertNull(viewModel.uiState.value.apiUrlError)
+    }
+
+    @Test
+    fun `onSaveApiUrl shows error when repository rejects the URL`() = runTest {
+        coEvery { settingsRepository.saveApiUrl(any()) } returns false
+        viewModel.onSaveApiUrl("not a url")
+        advanceUntilIdle()
+        assertEquals(SettingsViewModel.INVALID_API_URL_MESSAGE, viewModel.uiState.value.apiUrlError)
+
+        viewModel.onApiUrlEdited()
+        assertNull(viewModel.uiState.value.apiUrlError)
     }
 
     @Test
