@@ -126,14 +126,56 @@ class EditSubmissionViewModelTest {
     }
 
     @Test
-    fun `onSaveEdits sets error when carbs are zero`() = runTest {
+    fun `onSaveEdits accepts zero carbs for an item`() = runTest {
+        coEvery { carbRepository.deleteLog(42L) } just Runs
         viewModel = createViewModel()
         viewModel.onItemCarbsChange(viewModel.uiState.value.items[0].id, "0")
+
+        var successCalled = false
+        viewModel.onSaveEdits { successCalled = true }
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun `onSaveEdits accepts a meal where all items have zero carbs`() = runTest {
+        coEvery { carbRepository.deleteLog(42L) } just Runs
+        viewModel = createViewModel()
+        viewModel.uiState.value.items.forEach { viewModel.onItemCarbsChange(it.id, "0.0") }
+
+        var successCalled = false
+        viewModel.onSaveEdits { successCalled = true }
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        assertTrue(successCalled)
+        verify { resultCache.put(match { it.totalCarbs == 0f }, any(), any(), any()) }
+    }
+
+    @Test
+    fun `onSaveEdits sets error when carbs are negative`() = runTest {
+        viewModel = createViewModel()
+        viewModel.onItemCarbsChange(viewModel.uiState.value.items[0].id, "-5")
 
         viewModel.onSaveEdits {}
         advanceUntilIdle()
 
         assertNotNull(viewModel.uiState.value.error)
+        verify(exactly = 0) { resultCache.put(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `onSaveEdits sets error when carbs are not a number`() = runTest {
+        viewModel = createViewModel()
+        viewModel.onItemCarbsChange(viewModel.uiState.value.items[0].id, "abc")
+
+        viewModel.onSaveEdits {}
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.error)
+        verify(exactly = 0) { resultCache.put(any(), any(), any(), any()) }
     }
 
     @Test
