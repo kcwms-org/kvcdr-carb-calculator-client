@@ -17,13 +17,13 @@ A unit test, `onSaveEdits sets error when carbs are zero` in `app/src/test/java/
    - Replace the "carbs are zero" error test with one asserting `0` (and `0.0`) saves successfully with no error.
    - Add a test that a negative value (e.g. `-5`) still produces the validation error.
    - Keep/confirm a test that blank/non-numeric input still errors.
-3. Check the Re-analyze path uses the same validation (it calls `validateItems`) so zero is accepted there too; confirm the backend accepts `0` for `estimatedCarbs` in user-supplied items.
+3. Check the Re-analyze path uses the same validation (it calls `validateItems`) so zero is accepted there too (the backend already accepts `0` for `estimatedCarbs`).
 4. Add a patch version entry in `AboutScreen.kt` changelog.
 
 ## Risks & open questions
 
 - Confirmed by the reporter: a meal where **every** item is 0 (total 0g) is acceptable and must save.
-- Confirm the backend re-analysis endpoint doesn't reject `0` carb items; if it does, open a linked issue in `kvcdr-carb-calculator`.
+- Confirmed: the backend already accepts 0-carb items, so no backend change is needed.
 
 ## Acceptance criteria
 
