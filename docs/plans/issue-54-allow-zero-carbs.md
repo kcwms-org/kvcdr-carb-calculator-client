@@ -1,5 +1,7 @@
 # Issue #54 — 0.0 carb count is legit
 
+**Status:** Done — merged via PR #55
+
 ## Summary
 
 The Edit Results screen rejects a food item whose carb count is `0` / `0.0`, showing "All items must have a carb value greater than 0". Zero-carb foods (meat, eggs, cheese, diet drinks, etc.) are legitimate, so the edit form should accept a carb value of zero.
