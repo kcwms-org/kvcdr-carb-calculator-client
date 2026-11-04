@@ -22,11 +22,12 @@ A unit test, `onSaveEdits sets error when carbs are zero` in `app/src/test/java/
 
 ## Risks & open questions
 
-- Should a submission where **every** item is 0 (total 0g) be allowed? Assumed yes — a zero-carb meal is valid.
+- Confirmed by the reporter: a meal where **every** item is 0 (total 0g) is acceptable and must save.
 - Confirm the backend re-analysis endpoint doesn't reject `0` carb items; if it does, open a linked issue in `kvcdr-carb-calculator`.
 
 ## Acceptance criteria
 
 - Entering `0` or `0.0` for an item's carbs on the Edit Results screen saves without error, both before and after a log is saved.
+- A meal where all items are 0g (total 0g) saves successfully; add a unit test for this.
 - Negative and blank/non-numeric values are still rejected.
 - Unit tests pass (`docker compose run --rm build ./gradlew test`).
