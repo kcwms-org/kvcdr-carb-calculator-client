@@ -177,7 +177,7 @@ class EditSubmissionViewModel @Inject constructor(
         for (item in items) {
             if (item.name.isBlank()) return "All items must have a name"
             val carbs = item.estimatedCarbs.toFloatOrNull()
-            if (carbs == null || carbs <= 0f) return "All items must have a carb value greater than 0"
+            if (carbs == null || !carbs.isFinite() || carbs < 0f) return "All items must have a carb value of 0 or more"
         }
         return null
     }

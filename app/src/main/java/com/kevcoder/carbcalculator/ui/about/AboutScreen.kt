@@ -27,6 +27,12 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.8.2",
+        notes = listOf(
+            "Fix: Edit Results now accepts 0g carbs for zero-carb foods",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.8.1",
         notes = listOf(
             "Fix: request log now shows the configured API URL instead of localhost",
