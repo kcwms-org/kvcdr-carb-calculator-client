@@ -1,5 +1,7 @@
 # Issue #58 — app crashes with large request or response
 
+**Status:** Done — merged via PR #59
+
 ## Summary
 
 The app crashes when a carb-API exchange is large. The issue's only content is an
