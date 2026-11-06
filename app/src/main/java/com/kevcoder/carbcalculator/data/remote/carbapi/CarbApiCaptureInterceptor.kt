@@ -31,7 +31,7 @@ class CarbApiCaptureInterceptor @Inject constructor(
 
         // Peek response body — leaves it readable for downstream handlers
         val responseBody = try {
-            response.peekBody(Long.MAX_VALUE).string()
+            response.peekBody(MAX_PEEK_BYTES).string()
         } catch (_: Exception) {
             null
         }
@@ -84,4 +84,9 @@ class CarbApiCaptureInterceptor @Inject constructor(
             }
         }
     }.trimEnd()
+
+    private companion object {
+        /** Bytes of the response body copied for the log; the rest is ignored. */
+        const val MAX_PEEK_BYTES = 5_000_000L
+    }
 }

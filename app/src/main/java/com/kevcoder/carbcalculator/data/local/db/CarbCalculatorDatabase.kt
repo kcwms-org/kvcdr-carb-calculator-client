@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CarbLogEntity::class, SubmissionLogEntity::class],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 abstract class CarbCalculatorDatabase : RoomDatabase() {
@@ -16,6 +16,24 @@ abstract class CarbCalculatorDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "carb_calculator.db"
+
+        /** Chars kept per HTTP log column by [MIGRATION_7_8]. */
+        private const val MAX_LOG_CHARS = 64_000
+
+        /**
+         * Shrinks oversized HTTP log columns (base64 images in responses, issue #58).
+         * Pure SQL, so the large rows are never loaded into a cursor.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf("requestHeaders", "responseHeaders", "responseBody").forEach { col ->
+                    db.execSQL(
+                        "UPDATE submission_logs SET $col = substr($col, 1, $MAX_LOG_CHARS) || " +
+                            "'\n… [truncated by update]' WHERE length($col) > $MAX_LOG_CHARS",
+                    )
+                }
+            }
+        }
 
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {

@@ -25,19 +25,24 @@ class CarbApiCapture @Inject constructor() {
      * Accumulate a new HTTP operation (request + response).
      * If operations already exist, appends with a separator.
      */
-    fun appendOperation(reqHeaders: String, respHeaders: String, respBody: String?) {
+    fun appendOperation(rawReqHeaders: String, rawRespHeaders: String, rawRespBody: String?) {
+        // Redact embedded images and cap sizes so stored logs stay small (issue #58).
+        val reqHeaders = CapturedText.sanitize(rawReqHeaders)
+        val respHeaders = CapturedText.sanitize(rawRespHeaders)
+        val respBody = rawRespBody?.let { CapturedText.sanitize(it) }
+
         // Append request headers
         requestHeaders = if (requestHeaders.isNullOrBlank()) {
             reqHeaders
         } else {
-            requestHeaders + "\n\n" + reqHeaders
+            CapturedText.truncate(requestHeaders + "\n\n" + reqHeaders, CapturedText.MAX_STORED_CHARS)
         }
 
         // Append response headers
         responseHeaders = if (responseHeaders.isNullOrBlank()) {
             respHeaders
         } else {
-            responseHeaders + "\n\n" + respHeaders
+            CapturedText.truncate(responseHeaders + "\n\n" + respHeaders, CapturedText.MAX_STORED_CHARS)
         }
 
         // Append response body
@@ -45,7 +50,7 @@ class CarbApiCapture @Inject constructor() {
             responseBody = if (responseBody.isNullOrBlank()) {
                 respBody
             } else {
-                responseBody + "\n\n" + respBody
+                CapturedText.truncate(responseBody + "\n\n" + respBody, CapturedText.MAX_STORED_CHARS)
             }
         }
     }

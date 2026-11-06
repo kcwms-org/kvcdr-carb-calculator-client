@@ -27,6 +27,14 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.9.1",
+        notes = listOf(
+            "Fix: History no longer crashes when expanding a large Request/Response",
+            "Request/response logs hide embedded image data and are size-limited",
+            "Existing oversized logs are trimmed on update",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.9.0",
         notes = listOf(
             "History: copy a submission as plain text (Copy Text) or JSON (Copy Data)",
