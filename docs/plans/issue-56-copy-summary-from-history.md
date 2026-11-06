@@ -1,5 +1,7 @@
 # Issue #56 — Allow user to copy summary from history
 
+**Status:** Done — merged via PR #57
+
 ## Summary
 
 On the History screen, each submission inside an expanded log card has a copy icon (top-right of the
