@@ -25,6 +25,7 @@ data class SettingsUiState(
     val imageQuality: Int = AppPreferencesDataStore.DEFAULT_IMAGE_QUALITY,
     val saveImagesToDevice: Boolean = false,
     val expandSubmissionsDefault: Boolean = false,
+    val defaultCopyBehavior: String = AppPreferencesDataStore.DEFAULT_COPY_BEHAVIOR_VALUE,
     val exportDirectoryUri: String? = null,
     /** Shown under the API URL field when the last save was rejected */
     val apiUrlError: String? = null,
@@ -64,6 +65,7 @@ class SettingsViewModel @Inject constructor(
                     imageQuality = settings.imageQuality,
                     saveImagesToDevice = settings.saveImagesToDevice,
                     expandSubmissionsDefault = settings.expandSubmissionsDefault,
+                    defaultCopyBehavior = settings.defaultCopyBehavior,
                 )
             }
         }
@@ -159,6 +161,13 @@ class SettingsViewModel @Inject constructor(
     fun onExpandSubmissionsDefaultChanged(value: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveExpandSubmissionsDefault(value)
+            _saveSuccessEvent.emit(Unit)
+        }
+    }
+
+    fun onDefaultCopyBehaviorChanged(value: String) {
+        viewModelScope.launch {
+            settingsRepository.saveDefaultCopyBehavior(value)
             _saveSuccessEvent.emit(Unit)
         }
     }

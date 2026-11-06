@@ -62,12 +62,26 @@ class HistoryViewModelTest {
         every { carbRepository.getLogs() } returns flowOf(fakeLogs)
         every { submissionLogRepository.getOrphanedErrorLogs() } returns flowOf(emptyList())
         every { submissionLogRepository.getByParentId(any()) } returns flowOf(emptyList())
+        every { settingsRepository.getDefaultCopyBehavior() } returns flowOf("text")
         viewModel = HistoryViewModel(carbRepository, submissionLogRepository, settingsRepository, editLogCache)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `defaultCopyBehavior comes from settings`() = runTest {
+        every { settingsRepository.getDefaultCopyBehavior() } returns flowOf("data")
+        val vm = HistoryViewModel(carbRepository, submissionLogRepository, settingsRepository, editLogCache)
+        advanceUntilIdle()
+        assertEquals("data", vm.defaultCopyBehavior.value)
+    }
+
+    @Test
+    fun `defaultCopyBehavior starts as text`() {
+        assertEquals("text", viewModel.defaultCopyBehavior.value)
     }
 
     @Test

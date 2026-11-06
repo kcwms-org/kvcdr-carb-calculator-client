@@ -63,4 +63,5 @@ data class AppSettings(
     val imageQuality: Int,
     val saveImagesToDevice: Boolean = false,
     val expandSubmissionsDefault: Boolean = false,  // false = collapsed by default
+    val defaultCopyBehavior: String = "text",  // "text" | "data"
 )
