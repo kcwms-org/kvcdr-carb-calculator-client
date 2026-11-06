@@ -17,7 +17,19 @@ placeholder. The response body, though, is captured whole with
 `CarbApiCapture` → `AnalyzeFoodResult.responseBody` → `AnalysisResultCache` →
 `SubmissionLogRepository` → `submission_logs.responseBody` (Room, DB version 7).
 
-Likely crash points, any of which match "crashes with large response":
+**Confirmed by the reporter (issue comment, 2026-11-06):** the crash happens only on the
+History screen when expanding the Request or Response section, and not every time.
+Device: moto g (2025), Android 16. This points to crash point 3 below.
+`HttpSection` (`HistoryScreen.kt` ~L485) puts the full stored string in one monospace
+`Text` with no `maxLines` or length limit, inside a `LazyColumn` item. For entries from
+photo submissions, the response holds the base64 image (1 MB+), which wraps to tens of
+thousands of lines. Measuring that `Text` can go past Compose's `Constraints` size limit
+(`IllegalArgumentException: Can't represent a size of … in Constraints`) or run out of
+memory. Text-only submissions have small responses, which explains why it happens only
+sometimes. No stack trace yet, since the reporter can't easily capture one, so the exact
+exception is unconfirmed.
+
+Other candidate crash points (still worth fixing, since the same large text reaches them):
 
 1. **Room / SQLite CursorWindow (~2 MB per row).** Reading back a `submission_logs` row
    whose `responseBody` is over the window size throws `SQLiteBlobTooBigException`
@@ -26,8 +38,9 @@ Likely crash points, any of which match "crashes with large response":
    crashing because the bad row stays in the DB.
 2. **Clipboard copy.** `copyToClipboard` in `HistoryScreen.kt` (Response "Copy") sends
    the full text through Binder. Over ~1 MB this throws `TransactionTooLargeException`.
-3. **Compose `Text` rendering.** The expanded "Response" `HttpSection` lays out the full
-   multi-MB string. That causes jank, ANRs, or OOM.
+3. **Compose `Text` rendering (confirmed location).** The expanded Request/Response
+   `HttpSection` lays out the full multi-MB string. That causes the crash, or jank, ANRs,
+   or OOM.
 4. **`HttpLoggingInterceptor.Level.BODY`.** It is shared by the carb and Dexcom clients
    and on in every build type, so it buffers and logs the full body to logcat as well. That
    is extra memory pressure and leaks data in release builds.
@@ -39,6 +52,13 @@ fine: the redaction applies only to the **captured debug text**, not to what Ret
 parses.
 
 ## Proposed approach
+
+0. **Priority: fix the expand crash first** (`ui/history/HistoryScreen.kt`, `HttpSection`).
+   Step 4 below is the direct fix for the reported crash. It must also handle rows already
+   stored, so it can't rely only on the redaction in step 1. Limit the displayed text
+   (e.g. first 20k chars plus a "… truncated (N chars total)" note) before passing it to
+   `Text`. Also redact base64 runs in the displayed text so old entries are readable. Add
+   a unit test for the display-truncation helper.
 
 1. **Redact base64 image data in the captured response body**
    (`data/remote/carbapi/CarbApiCaptureInterceptor.kt`).
@@ -83,10 +103,17 @@ parses.
 
 ## Risks & open questions
 
-- The issue gives no stack trace or reproduction steps, so the exact crash site is
-  inferred. Most likely it is the CursorWindow failure on History, possibly together with
-  the clipboard copy. Ask the reporter for a logcat trace if the fix does not resolve it.
-  The plan covers all candidate sites.
+- The reporter narrowed the crash to expanding Request/Response in History, but there is
+  still no stack trace. If the crash remains after the fix, ask for
+  `adb logcat -b crash -d` output.
+- Expanding **Request** was also reported to crash. Request image parts are already
+  replaced by a placeholder, so verify what makes a stored `requestHeaders` large: for
+  example, captures that pile up across retries in `CarbApiCapture.appendOperation`,
+  where the capture is never cleared between calls. Or the reporter may have tapped
+  Response. The display limit in step 0 covers both either way.
+- Optional follow-up: a small in-app crash logger (`Thread.setDefaultUncaughtExceptionHandler`
+  writes the last crash to `filesDir`, with a copy button on the About screen). The
+  reporter could then share traces without adb.
 - "Large **request**": request images are already replaced by a placeholder, and uploads
   are capped at `MAX_UPLOAD_BYTES = 900_000` in `CarbRepository`. The text part and
   headers are not capped. The size cap in step 2 covers them.
@@ -105,7 +132,9 @@ parses.
   data and never exceeds the cap.
 - After upgrading, a device with existing oversized rows can open History without
   crashing.
-- Expanding and copying the Response section works for large entries.
+- Expanding the Request and Response sections in History never crashes, including for
+  entries saved before the fix. Large content is shown truncated with a note.
+- Copying the Response section works for large entries.
 - The result image (`imageData`) still shows correctly from the API response.
 - Release builds do not log full HTTP bodies.
 - Unit tests for the sanitizer and the capture truncation pass in CI.
