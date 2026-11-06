@@ -49,7 +49,6 @@ A new setting, **Default Copy Behavior**, decides what a plain tap on the icon d
      the simplest discoverable option.)
    - Add `SubmissionLog.toSummaryText()` that builds plain text matching what is shown:
      ```
-     Nov 6, 2026 7:02 AM
      The oatmeal is plain and the coffee is black with no sugar
      Bacon strips (3 strips, cooked) - 0.5g
      Fried egg (over easy/sunny side) - 0.5g
@@ -57,7 +56,7 @@ A new setting, **Default Copy Behavior**, decides what a plain tap on the icon d
      Black coffee - 0.0g
      Total carbs: 28.0g
      ```
-     Skip lines whose source field is null. For error submissions, include the error message instead
+     Do not include the date/time (per issue comment). Skip lines whose source field is null. For error submissions, include the error message instead
      of items.
    - Show a short Toast/snackbar ("Copied summary" / "Copied data") if one isn't already shown by the
      system clipboard UI (Android 13+ shows its own; only toast on API < 33).
@@ -75,14 +74,14 @@ A new setting, **Default Copy Behavior**, decides what a plain tap on the icon d
 
 - Exact UI affordance for the dropdown (arrow vs. long-press) isn't specified; going with a visible
   dropdown arrow for discoverability. Easy to change.
-- Text format isn't specified; the format above mirrors the on-screen layout. Adjust if the user wants
-  a different shape (e.g. no timestamp).
+- Text format mirrors the on-screen layout minus the date/time, which the user asked to leave out.
 - Old backups lack the new field — must default gracefully.
 
 ## Acceptance criteria
 
 - In History, each submission's copy control offers "Copy Text" and "Copy Data".
-- "Copy Text" puts the visible summary (description, items with carbs, total) on the clipboard.
+- "Copy Text" puts the visible summary (description, items with carbs, total) on the clipboard,
+  without the date/time.
 - "Copy Data" puts the same JSON on the clipboard as today.
 - A plain tap on the icon does whatever "Default Copy Behavior" is set to.
 - Settings has a "Default Copy Behavior" option; fresh installs default to Copy Text.
