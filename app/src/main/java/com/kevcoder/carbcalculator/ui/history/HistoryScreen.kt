@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
+import com.kevcoder.carbcalculator.data.remote.carbapi.CapturedText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -242,7 +243,7 @@ private fun ErrorLogCard(
 
                     submissionLog.responseBody?.let { body ->
                         Text(
-                            text = "Response body: $body",
+                            text = "Response body: ${CapturedText.sanitize(body, maxChars = 500)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             maxLines = 3,
@@ -522,8 +523,12 @@ private fun HttpSection(
                 shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                // Cap and redact so huge logs (base64 images) can't crash layout (issue #58).
+                val displayText = remember(content) {
+                    content?.let { CapturedText.sanitize(it, CapturedText.MAX_DISPLAY_CHARS) } ?: "(none)"
+                }
                 Text(
-                    text = content ?: "(none)",
+                    text = displayText,
                     modifier = Modifier.padding(8.dp),
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -614,7 +619,13 @@ private fun showCopiedToast(context: Context, message: String) {
 
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+    // Large clips fail with TransactionTooLargeException (issue #58).
+    val safeText = CapturedText.sanitize(text, CapturedText.MAX_CLIPBOARD_CHARS)
+    try {
+        clipboard.setPrimaryClip(ClipData.newPlainText(label, safeText))
+    } catch (e: RuntimeException) {
+        Toast.makeText(context, "Couldn't copy: text too large", Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun SubmissionLog.toJsonString(): String {

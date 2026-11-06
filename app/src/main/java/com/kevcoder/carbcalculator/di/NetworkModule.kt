@@ -1,5 +1,6 @@
 package com.kevcoder.carbcalculator.di
 
+import com.kevcoder.carbcalculator.BuildConfig
 import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCapture
 import com.kevcoder.carbcalculator.data.remote.carbapi.CarbApiCaptureInterceptor
@@ -44,7 +45,7 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
 
     @Provides
@@ -61,7 +62,6 @@ object NetworkModule {
     @Singleton
     @Named("carb")
     fun provideCarbOkHttpClient(
-        logging: HttpLoggingInterceptor,
         captureInterceptor: CarbApiCaptureInterceptor,
         dataStore: AppPreferencesDataStore,
     ): OkHttpClient {
@@ -76,6 +76,11 @@ object NetworkModule {
                 ?: CarbApiUrl.toBaseHttpUrl(AppPreferencesDataStore.DEFAULT_CARB_API_URL)!!
             val newUrl = CarbApiUrl.rewrite(original.url, base)
             chain.proceed(original.newBuilder().url(newUrl).build())
+        }
+        // Headers only: responses embed base64 images (1 MB+), and the capture
+        // interceptor already records a redacted body (issue #58).
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.HEADERS else HttpLoggingInterceptor.Level.NONE
         }
         return OkHttpClient.Builder()
             .addInterceptor(dynamicUrlInterceptor)
