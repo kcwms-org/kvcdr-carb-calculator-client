@@ -276,6 +276,25 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
+                Text("Default Copy Behavior", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    "What tapping the copy icon on a submission does",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = uiState.defaultCopyBehavior == AppPreferencesDataStore.COPY_BEHAVIOR_TEXT,
+                        onClick = { viewModel.onDefaultCopyBehaviorChanged(AppPreferencesDataStore.COPY_BEHAVIOR_TEXT) },
+                        label = { Text("Copy Text") },
+                    )
+                    FilterChip(
+                        selected = uiState.defaultCopyBehavior == AppPreferencesDataStore.COPY_BEHAVIOR_DATA,
+                        onClick = { viewModel.onDefaultCopyBehaviorChanged(AppPreferencesDataStore.COPY_BEHAVIOR_DATA) },
+                        label = { Text("Copy Data") },
+                    )
+                }
+
                 HorizontalDivider()
 
                 // --- Dexcom ---

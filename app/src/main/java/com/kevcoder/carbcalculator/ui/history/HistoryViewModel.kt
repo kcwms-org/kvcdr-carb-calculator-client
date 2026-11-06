@@ -2,6 +2,7 @@ package com.kevcoder.carbcalculator.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import com.kevcoder.carbcalculator.data.repository.CarbRepository
 import com.kevcoder.carbcalculator.data.repository.EditLogCache
 import com.kevcoder.carbcalculator.data.repository.SettingsRepository
@@ -60,6 +61,14 @@ class HistoryViewModel @Inject constructor(
         started = SharingStarted.Eagerly,
         initialValue = emptyList(),
     )
+
+    /** What a plain tap on a submission's copy icon does: "text" or "data" */
+    val defaultCopyBehavior: StateFlow<String> = settingsRepository.getDefaultCopyBehavior()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = AppPreferencesDataStore.DEFAULT_COPY_BEHAVIOR_VALUE,
+        )
 
     private val _expandedItemId = MutableStateFlow<String?>(null)
     val expandedItemId: StateFlow<String?> = _expandedItemId

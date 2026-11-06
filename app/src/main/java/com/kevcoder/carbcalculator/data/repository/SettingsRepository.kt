@@ -41,6 +41,7 @@ class SettingsRepository @Inject constructor(
         dataStore.imageQuality,
         dataStore.saveImagesToDevice,
         dataStore.expandSubmissionsDefault,
+        dataStore.defaultCopyBehavior,
     ) { values ->
         AppSettings(
             carbApiUrl = values[0] as String,
@@ -49,6 +50,7 @@ class SettingsRepository @Inject constructor(
             imageQuality = values[3] as Int,
             saveImagesToDevice = values[4] as Boolean,
             expandSubmissionsDefault = values[5] as Boolean,
+            defaultCopyBehavior = values[6] as String,
         )
     }
 
@@ -73,6 +75,10 @@ class SettingsRepository @Inject constructor(
 
     suspend fun saveExpandSubmissionsDefault(value: Boolean) = dataStore.saveExpandSubmissionsDefault(value)
 
+    suspend fun saveDefaultCopyBehavior(value: String) = dataStore.saveDefaultCopyBehavior(value)
+
+    fun getDefaultCopyBehavior(): Flow<String> = dataStore.defaultCopyBehavior
+
     suspend fun saveExportDirectoryUri(uri: String) = dataStore.saveExportDirectoryUri(uri)
 
     suspend fun clearExportDirectoryUri() = dataStore.clearExportDirectoryUri()
@@ -90,6 +96,7 @@ class SettingsRepository @Inject constructor(
                 submissionPurgeInterval = dataStore.submissionPurgeInterval.first(),
                 saveImagesToDevice = dataStore.saveImagesToDevice.first(),
                 expandSubmissionsDefault = dataStore.expandSubmissionsDefault.first(),
+                defaultCopyBehavior = dataStore.defaultCopyBehavior.first(),
             )
 
             val logs = carbLogDao.getAllLogs().first().map { entity ->
@@ -163,6 +170,9 @@ class SettingsRepository @Inject constructor(
             saveSubmissionPurgeInterval(backup.settings.submissionPurgeInterval)
             saveSaveImagesToDevice(backup.settings.saveImagesToDevice)
             saveExpandSubmissionsDefault(backup.settings.expandSubmissionsDefault)
+            saveDefaultCopyBehavior(
+                backup.settings.defaultCopyBehavior ?: AppPreferencesDataStore.DEFAULT_COPY_BEHAVIOR_VALUE
+            )
 
             // Restore logs
             backup.carbLogs.forEach { snapshot ->

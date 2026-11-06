@@ -28,6 +28,7 @@ class AppPreferencesDataStore @Inject constructor(
         val SAVE_IMAGES_TO_DEVICE = booleanPreferencesKey("save_images_to_device")
         val EXPAND_SUBMISSIONS_DEFAULT = booleanPreferencesKey("expand_submissions_default")
         val EXPORT_DIRECTORY_URI = stringPreferencesKey("export_directory_uri")
+        val DEFAULT_COPY_BEHAVIOR = stringPreferencesKey("default_copy_behavior")
 
         const val DEFAULT_CARB_API_URL = "https://carb-calculator.kevcoder.com"
         const val DEXCOM_ENV_PRODUCTION = "production"
@@ -41,6 +42,11 @@ class AppPreferencesDataStore @Inject constructor(
         const val DEFAULT_PURGE_INTERVAL = PURGE_NEVER
 
         const val DEFAULT_IMAGE_QUALITY = 80
+
+        /** What a plain tap on a History copy icon does */
+        const val COPY_BEHAVIOR_TEXT = "text"
+        const val COPY_BEHAVIOR_DATA = "data"
+        const val DEFAULT_COPY_BEHAVIOR_VALUE = COPY_BEHAVIOR_TEXT
     }
 
     val carbApiUrl: Flow<String> = context.dataStore.data.map { prefs ->
@@ -65,6 +71,10 @@ class AppPreferencesDataStore @Inject constructor(
 
     val expandSubmissionsDefault: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[EXPAND_SUBMISSIONS_DEFAULT] ?: false
+    }
+
+    val defaultCopyBehavior: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[DEFAULT_COPY_BEHAVIOR] ?: DEFAULT_COPY_BEHAVIOR_VALUE
     }
 
     val exportDirectoryUri: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -93,6 +103,10 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun saveExpandSubmissionsDefault(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[EXPAND_SUBMISSIONS_DEFAULT] = value }
+    }
+
+    suspend fun saveDefaultCopyBehavior(value: String) {
+        context.dataStore.edit { prefs -> prefs[DEFAULT_COPY_BEHAVIOR] = value }
     }
 
     suspend fun saveExportDirectoryUri(uri: String) {

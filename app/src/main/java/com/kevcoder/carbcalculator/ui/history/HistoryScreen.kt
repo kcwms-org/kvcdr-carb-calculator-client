@@ -3,6 +3,9 @@ package com.kevcoder.carbcalculator.ui.history
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
+import android.widget.Toast
+import com.kevcoder.carbcalculator.data.local.datastore.AppPreferencesDataStore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -50,6 +54,7 @@ fun HistoryScreen(
     val expandedItemId by viewModel.expandedItemId.collectAsState()
     val expandedSubmissions by viewModel.expandedSubmissions.collectAsState()
     val viewingImageLog by viewModel.viewingImageLog.collectAsState()
+    val defaultCopyBehavior by viewModel.defaultCopyBehavior.collectAsState()
 
     Scaffold(
         topBar = {
@@ -93,6 +98,7 @@ fun HistoryScreen(
                                 log = item.carbLog,
                                 isExpanded = isExpanded,
                                 submissions = if (isExpanded) expandedSubmissions else emptyList(),
+                                defaultCopyBehavior = defaultCopyBehavior,
                                 onToggleExpand = { viewModel.toggleExpand("carb-${item.carbLog.id}") },
                                 onDelete = { viewModel.deleteSuccessfulLog(item.carbLog.id) },
                                 onImageClick = { viewModel.onImageClick(item.carbLog) },
@@ -253,6 +259,7 @@ private fun CarbLogCard(
     log: CarbLog,
     isExpanded: Boolean,
     submissions: List<SubmissionLog>,
+    defaultCopyBehavior: String,
     onToggleExpand: () -> Unit,
     onDelete: () -> Unit,
     onImageClick: () -> Unit,
@@ -372,7 +379,7 @@ private fun CarbLogCard(
                     )
                 } else {
                     submissions.forEach { sub ->
-                        SubmissionDetail(submission = sub)
+                        SubmissionDetail(submission = sub, defaultCopyBehavior = defaultCopyBehavior)
                         if (sub != submissions.last()) HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
                     }
                 }
@@ -382,7 +389,7 @@ private fun CarbLogCard(
 }
 
 @Composable
-private fun SubmissionDetail(submission: SubmissionLog) {
+private fun SubmissionDetail(submission: SubmissionLog, defaultCopyBehavior: String) {
     val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
     var requestExpanded by remember { mutableStateOf(false) }
@@ -400,16 +407,17 @@ private fun SubmissionDetail(submission: SubmissionLog) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StatusChip(status = submission.status)
-            IconButton(
-                onClick = { copyToClipboard(context, "submission_${submission.id}", submission.toJsonString()) },
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    Icons.Default.ContentCopy,
-                    contentDescription = "Copy as JSON",
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+            SubmissionCopyButton(
+                defaultCopyBehavior = defaultCopyBehavior,
+                onCopyText = {
+                    copyToClipboard(context, "summary_${submission.id}", submission.toSummaryText())
+                    showCopiedToast(context, "Copied summary")
+                },
+                onCopyData = {
+                    copyToClipboard(context, "submission_${submission.id}", submission.toJsonString())
+                    showCopiedToast(context, "Copied data")
+                },
+            )
         }
 
         Text(
@@ -539,6 +547,68 @@ private fun StatusChip(status: String) {
             style = MaterialTheme.typography.labelSmall,
             color = color,
         )
+    }
+}
+
+/**
+ * Copy icon plus a dropdown arrow. Tapping the icon runs [defaultCopyBehavior];
+ * the arrow opens a menu with both choices.
+ */
+@Composable
+private fun SubmissionCopyButton(
+    defaultCopyBehavior: String,
+    onCopyText: () -> Unit,
+    onCopyData: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    val copiesData = defaultCopyBehavior == AppPreferencesDataStore.COPY_BEHAVIOR_DATA
+
+    Box {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = if (copiesData) onCopyData else onCopyText,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Icon(
+                    Icons.Default.ContentCopy,
+                    contentDescription = if (copiesData) "Copy data" else "Copy text",
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            IconButton(
+                onClick = { menuOpen = true },
+                modifier = Modifier.size(28.dp),
+            ) {
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = "Copy options",
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text("Copy Text") },
+                onClick = {
+                    menuOpen = false
+                    onCopyText()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Copy Data") },
+                onClick = {
+                    menuOpen = false
+                    onCopyData()
+                },
+            )
+        }
+    }
+}
+
+/** Android 13+ shows its own clipboard confirmation, so only toast on older versions. */
+private fun showCopiedToast(context: Context, message: String) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }
 

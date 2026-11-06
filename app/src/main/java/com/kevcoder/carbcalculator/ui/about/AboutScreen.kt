@@ -27,6 +27,13 @@ private data class ChangelogEntry(val version: String, val notes: List<String>)
 
 private val changelog = listOf(
     ChangelogEntry(
+        version = "1.9.0",
+        notes = listOf(
+            "History: copy a submission as plain text (Copy Text) or JSON (Copy Data)",
+            "New setting: Default Copy Behavior (defaults to Copy Text)",
+        ),
+    ),
+    ChangelogEntry(
         version = "1.8.2",
         notes = listOf(
             "Fix: Edit Results now accepts 0g carbs for zero-carb foods",

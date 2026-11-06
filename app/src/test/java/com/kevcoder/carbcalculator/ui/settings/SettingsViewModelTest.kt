@@ -90,6 +90,34 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `default copy behavior is Copy Text`() = runTest {
+        advanceUntilIdle()
+        assertEquals(AppPreferencesDataStore.COPY_BEHAVIOR_TEXT, viewModel.uiState.value.defaultCopyBehavior)
+    }
+
+    @Test
+    fun `onDefaultCopyBehaviorChanged delegates to repository`() = runTest {
+        coEvery { settingsRepository.saveDefaultCopyBehavior(any()) } just Runs
+        viewModel.onDefaultCopyBehaviorChanged(AppPreferencesDataStore.COPY_BEHAVIOR_DATA)
+        advanceUntilIdle()
+        coVerify { settingsRepository.saveDefaultCopyBehavior(AppPreferencesDataStore.COPY_BEHAVIOR_DATA) }
+    }
+
+    @Test
+    fun `default copy behavior is Copy Text`() = runTest {
+        advanceUntilIdle()
+        assertEquals(AppPreferencesDataStore.COPY_BEHAVIOR_TEXT, viewModel.uiState.value.defaultCopyBehavior)
+    }
+
+    @Test
+    fun `onDefaultCopyBehaviorChanged delegates to repository`() = runTest {
+        coEvery { settingsRepository.saveDefaultCopyBehavior(any()) } just Runs
+        viewModel.onDefaultCopyBehaviorChanged(AppPreferencesDataStore.COPY_BEHAVIOR_DATA)
+        advanceUntilIdle()
+        coVerify { settingsRepository.saveDefaultCopyBehavior(AppPreferencesDataStore.COPY_BEHAVIOR_DATA) }
+    }
+
+    @Test
     fun `onDexcomEnvChanged delegates to repository`() = runTest {
         coEvery { settingsRepository.saveDexcomEnv(any()) } just Runs
         viewModel.onDexcomEnvChanged(AppPreferencesDataStore.DEXCOM_ENV_SANDBOX)

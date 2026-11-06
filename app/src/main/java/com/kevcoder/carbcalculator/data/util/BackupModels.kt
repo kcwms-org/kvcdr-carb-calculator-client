@@ -18,6 +18,8 @@ data class SettingsSnapshot(
     val submissionPurgeInterval: String,
     val saveImagesToDevice: Boolean,
     val expandSubmissionsDefault: Boolean,
+    /** Null in backups made before this setting existed */
+    val defaultCopyBehavior: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
